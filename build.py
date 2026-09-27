@@ -28,6 +28,9 @@ def main():
         "--add-data", str(ROOT / "lunarhdr" / "assets") + ":lunarhdr/assets",
         "--exclude-module", "PySide6.QtWebEngineCore",
         "--exclude-module", "PySide6.QtQml",
+        # Windows scans imported packages for DLLs; Astropy's optional plotting
+        # package raises pytest.Skipped when matplotlib is not installed.
+        "--exclude-module", "astropy.visualization",
         "--exclude-module", "tkinter",
     ]
     if platform.system() == "Darwin":

@@ -29,6 +29,8 @@ Pôvodné overenie zahŕňalo aj syntetické demo, Natural/Mineral Moon, porovna
 
 Samostatný Mac balík s FITS podporou úspešne načítal päť syntetických FITS vrátane komprimovanej obrazovej HDU a vytvoril ich HDR cez grafické rozhranie. Finálny balík po opravách DWARF importu bol znovu zostavený, spustený a cez grafické rozhranie načítal všetky štyri skutočné používateľove FITS; viditeľná je voľba referencie, expozičnej fúzie, upozornenie na časy a nový posuvník farieb. Výpočet finálnej fúzie a exportov bol overený rovnakým obrazovým jadrom zo zdrojového kódu.
 
+Finálny samostatný balík 0.3.0 bol spustený cez macOS LaunchServices. Po vytvorení HDR zo syntetickej ukážky bol cez grafické rozhranie vybraný orez, zapnutý podpis a otvorený PNG export. Dialóg správne začal v priečinku Obrázky; zápis prebehol úspešne a opätovné načítanie výstupu potvrdilo platné RGB PNG s rozmerom 890 × 868 px. Bežný klik na Mineral Moon správne nastavil posuvníky.
+
 ## Súkromná praktická skúška
 
 Čítanie bolo lokálne overené aj na štyroch RGB FITS z DWARF s uloženým senzorovým údajom BAYERPAT. Dva detailné zábery sa registrovali podľa povrchu s mediánom odchýlky zhodných bodov pod štvrť pixela. Pri prepálenom zábere registrácia použila okraj disku, nízku istotu a upozornenie na ručnú kontrolu.
@@ -37,6 +39,6 @@ Používateľove snímky, názvy súborov, výsledky a referenčná fotografia n
 
 ## Prenositeľnosť
 
-Závislosti sa podarilo vyriešiť pre Windows x64 a Linux x64 / glibc 2.34+. Tieto operačné systémy tu neboli spustené. Ich spúšťače a natívne zostavenia sú pripravené, ale ich beh musí overiť cieľový systém. Aktuálny stav zostavení je dostupný v záložke Actions repozitára.
+Prvý GitHub Actions beh úspešne vykonal všetkých 92 testov na macOS ARM, macOS Intel, Windows x64 a Ubuntu 24.04 x64. Testy rozhrania v CI používajú Qt offscreen. Linux a obe architektúry macOS dokončili aj zostavenie; prenos Intel artefaktu narazil na výpadok služby GitHub. Windows balenie si vyžiadalo explicitné vylúčenie nepoužívanej astropy.visualization a následný opakovaný build. Aktuálny výsledok a archívy sú dostupné v [Actions](https://github.com/Kwispy232/lunar-hdr-studio/actions). Interaktívne používanie Windows a Linuxu na fyzickom počítači tu nebolo odskúšané.
 
 Podpis finálneho ZIP balíka bol úspešne overený aj po rozbalení do čistého dočasného priečinka. Aplikácia je ad-hoc podpísaná; nejde o Apple Developer notarizáciu.
