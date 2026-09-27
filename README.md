@@ -1,74 +1,121 @@
 # Lunar HDR Studio
 
-Lokálna desktopová aplikácia pre skladanie dvoch alebo viacerých expozícií Mesiaca a tvorbu vzhľadu **Mineral Moon**. Verzia **0.3.0** podporuje FITS, ľubovoľný počet expozícií, hviezdne pozadie, vlastný podpis a orez obrázka. Fotografie sa nikam neposielajú. Rozhranie je v slovenčine.
+[Slovensky](README.sk.md)
 
-![Lunar HDR Studio so syntetickou ukážkou](docs/screenshot.png)
+A local desktop app for combining two or more lunar exposures and creating a **Mineral Moon** look. Version **0.4.0** supports FITS, any number of exposures, star backgrounds, custom signatures and cropping. Your photographs stay on your computer. The app interface is currently in Slovak.
 
-## Rýchly štart
+![Mineral Moon result processed from real lunar FITS captures](docs/mineral-moon.png)
 
-**Hotové aplikácie:** stiahni ZIP pre svoj systém zo sekcie [Releases](https://github.com/Kwispy232/lunar-hdr-studio/releases). Na Macu otvor `LunarHDR.app`; Python nie je potrebný. Dostupné platformy závisia od úspešne dokončených zostavení.
+Real photographic example: exposure fusion of lunar FITS captures supplied by the maintainer, with the Mineral Moon preset and a manual −0.5 EV display-exposure adjustment. The original FITS files are not distributed with this repository. This photograph is separate from the procedural demo bundled with the app.
 
-**Zo zdrojového kódu na macOS, Windows a Linuxe:** nainštaluj [Python 3.11 alebo novší](https://www.python.org/downloads/). Potom spusti:
+## Quick start
 
-- Windows: dvojklik na `run.bat`.
-- macOS: dvojklik na `run.command`.
-- Linux: `sh run.sh`.
+**Standalone apps:** find published packages in [Releases](https://github.com/Kwispy232/lunar-hdr-studio/releases). On a Mac, open `LunarHDR.app`; Python is not required. ZIP packages for macOS Apple silicon, macOS Intel, Windows x64 and Linux x64 are also published as artifacts of successful [GitHub Actions builds](https://github.com/Kwispy232/lunar-hdr-studio/actions/workflows/build.yml).
 
-Spúšťače vytvoria lokálne prostredie `.venv` a nainštalujú závislosti. Na prvé spustenie treba internet. Na Linuxe treba grafické prostredie a systémové knižnice Qt/X11 alebo Wayland; napríklad Ubuntu môže potrebovať `libxcb-cursor0` a `libxkbcommon-x11-0`.
-
-Pripnuté binárne závislosti cielia na moderné systémy: macOS 13+, Windows 10/11 a Linux x86_64 s glibc 2.34+ (napríklad Ubuntu 22.04+). Dostupnosť balíkov bola overená pre macOS ARM, Windows x64 a Linux x64; samotná aplikácia bola spustená iba na tomto Macu.
-
-Alternatíva v termináli:
+**Clone and run on your own computer:** install Git and [Python 3.11–3.14](https://www.python.org/downloads/), then clone the repository:
 
 ```sh
-python -m venv .venv
-# Windows: .venv\Scripts\activate
-# macOS / Linux: source .venv/bin/activate
-python -m pip install -r requirements.txt
-python main.py
+git clone https://github.com/Kwispy232/lunar-hdr-studio.git
+cd lunar-hdr-studio
 ```
 
-## Pracovný postup
+Run the launcher for your operating system from that directory:
 
-1. Načítaj dve alebo viac fotografií. Ďalšie môžeš pridávať do zoznamu, jednotlivé snímky nahradiť alebo odstrániť. Ako referenciu vyber ostrý, dobre exponovaný záber; určuje výsledný výrez a rozmery.
-2. Nastav rozdiely EV voči referenčnému záberu. Pri dostupnom expozičnom čase v každom FITS sa predvyplnia z hlavičiek. Napríklad časy 1/1000, 1/250 a 1/60 s pri rovnakom ISO a clone približne zodpovedajú −2, 0 a +2 EV. Pri chýbajúcich údajoch nastav EV ručne; predvolené nuly nie sú odhadom skutočnej expozície. Z JPEG EXIF sa časy automaticky nezisťujú.
-3. Vyber HDR alebo expozičnú fúziu a spusti zarovnanie a skladanie. Skontroluj diagnostiku zarovnania; pri neistej registrácii použi ručné doladenie.
-4. Vyskúšaj **Mineral Moon**, prípadne uprav saturáciu, teplotu, kontrast, detaily a ďalšie posuvníky. Porovnaj výsledok s normálnou expozíciou.
-5. V časti **Dokončenie** dole v pravom paneli uprav pozadie: ponechaj pôvodné hviezdy, potlač malé svetlé body alebo pridaj syntetické hviezdy ako vizuálny efekt. Tieto voľby nemenia pôvodné súbory.
-6. Vyber orez myšou a podľa potreby zapni vlastný textový podpis. Orez môžeš zrušiť a podpis upraviť.
-7. Exportuj hotový obrázok ako PNG/JPEG alebo 16-bit TIFF. Pre ďalšie HDR spracovanie exportuj lineárny súbor Radiance `.hdr`.
+**Windows — PowerShell or Command Prompt**
 
-## Čo jednotlivé režimy robia
+```powershell
+.\run.bat
+```
 
-**HDR z bežných obrázkov** linearizuje vstupné sRGB farby, zohľadní zadané EV a vážene spojí expozície. Výstup v plávajúcej desatinnej čiarke zachováva hodnoty nad 1. Náhľad používa mapovanie tónov. Ide o relatívne HDR pri predpoklade sRGB odozvy, nie o kalibráciu senzora alebo presné meranie jasu.
+You can also double-click `run.bat`. The launcher uses the Python `py` launcher when available, or `python` from PATH.
 
-**HDR z FITS** používa pôvodné lineárne vzorky po aplikovaní FITS mierky `BSCALE/BZERO`. Kontrast náhľadu nemení dáta použité na skladanie. Časy `EXPTIME` umožnia prepočet intenzity na jednotku času; vstupy už označené ako intenzita za sekundu sa nedelia časom znova. Zábery musia mať zlučiteľné jednotky a kalibráciu. Podporované sú ADU, DN, counts a elektróny/fotóny aj ich hodnoty za sekundu; iné kalibrované jednotky, napríklad Jy/sr, treba najprv previesť alebo použiť vizuálnu fúziu. Automatický odhad EV predpokladá rovnaký gain, clonu a filtre. Pri pomere časov nad 1000× aplikácia zobrazí upozornenie na kontrolu normalizácie. Pri už jasovo normalizovaných stackoch skontroluj ručne EV; celkový integračný čas nemusí vyjadrovať rozdiel jasu uložených pixelov. Bežné sRGB obrázky a FITS s fyzikálnymi jednotkami nespájaj do jedného rádiometrického HDR; na vizuálne spojenie použi expozičnú fúziu.
+**macOS — Terminal**
 
-**Expozičná fúzia** spája použiteľné oblasti expozícií do zobraziteľného obrázka. Tento režim nie je lineárny HDR a nemá export HDR radiancie. Rozdiel medzi HDR a expozičnou fúziou vysvetľuje aj [dokumentácia OpenCV](https://docs.opencv.org/4.12.0/d2/df0/tutorial_py_hdr.html).
+```sh
+bash run.command
+```
 
-**Mineral Moon** zvýrazňuje existujúce farebné rozdiely. Posuvník **Neutralizácia farieb** najprv vyváži priemerný farebný nádych jasnej časti disku; predpokladá približne neutrálny Mesiac a dá sa znížiť alebo vypnúť. Preset Mineral Moon ho zapína, aby nezosilňoval iba celkový žltý či zelený nádych vstupu. Nevytvára skutočné farebné informácie z monochromatickej snímky a nie je mineralogickou analýzou. Kvalitu ovplyvní farebný šum a vyváženie bielej.
+You can also double-click `run.command` in Finder.
 
-PNG/JPEG/TIFF obsahujú úpravy z posuvníkov, zvolené hviezdne pozadie, orez a podpis. Radiance HDR obsahuje celé základné lineárne zlúčenie, bez kreatívnych úprav, orezu, podpisu a mapovania tónov. Pridané hviezdy sú deterministický vizuálny efekt, nie zaznamenané astronomické objekty. Potlačenie hviezd je odhad malých svetlých bodov mimo disku, preto skontroluj náhľad.
+**Linux — Terminal**
 
-Exportný dialóg začína v absolútnej ceste priečinka Obrázky (prípadne v domovskom priečinku). Po úspešnom exporte si počas otvorenej relácie pamätá zvolený priečinok. Chyba zápisu zobrazí konkrétny cieľ a vysvetlenie; výsledok ostáva pripravený na opakovaný export.
+```sh
+sh run.sh
+```
 
-## Vstupy a praktické hranice
+The launchers find a supported Python installation, create a local `.venv` environment and install the pinned dependencies. The first launch requires an internet connection; later launches reuse the environment without running pip when the installed versions match. Python 3.11 is the version used in CI. Python 3.15 is not supported by the pinned Qt dependency. Linux requires a graphical desktop and Qt system libraries. On Ubuntu/Debian, install them with:
 
-- JPEG, PNG a TIFF; 8-bit a 16-bit vstupy, RGB aj odtiene sivej.
-- FITS (`.fits`, `.fit`, `.fts`, aj gzip a `.fits.fz`): 2D monochromatické snímky a RGB obrazové polia. Použije sa prvá obrazová HDU, vrátane obrazového rozšírenia a komprimovanej HDU. Podporované sú celočíselné aj plávajúce hodnoty a FITS škálovanie; pracovné obrazové polia používajú float32.
-- Úroveň saturácie FITS sa číta zo `SATURATE`/`SATLEVEL`/`SATURLEV`, inak sa pri celočíselných dátach použije strop úložného typu. Ak senzor saturuje skôr, správnu úroveň doplň do FITS hlavičky. Maximum plávajúcej snímky sa automaticky nepovažuje za prepálenie.
-- Neplatné FITS vzorky (NaN/Inf/BLANK) sa maskujú. Záporné kalibrované vzorky sa neodsúvajú individuálnym pripočítaním konštanty; pri nezápornom HDR výstupe sa záporný výsledok oreže s upozornením. Spektrálne/časové kocky a 2D nevyvolané Bayer dáta sa nepovažujú za RGB; najprv ich vyvolaj alebo vyber obrazovú rovinu. Trojkanálové RGB exporty so zvyšným údajom BAYERPAT (napríklad DWARF) sa načítajú ako hotové RGB s upozornením, bez opakovaného debayerovania.
-- Pre fotoaparátový RAW alebo SER najprv exportuj farebný TIFF. Pri exporte použi sRGB; plná správa ICC profilov a RAW vyvolávanie nie sú súčasťou tejto verzie.
-- Zábery by mali zachytávať tú istú fázu Mesiaca krátko po sebe, s viditeľným diskom a spoločnými detailmi. Extrémny orez, mraky, slabý signál alebo úplné prepálenie môžu znemožniť automatické zarovnanie.
-- Registrácia podporuje posun, mierku a otočenie. Nekompenzuje atmosférické chvenie jednotlivých oblastí ani stopy pohybujúcich sa hviezd.
-- Detail prepálený vo všetkých záberoch nemožno obnoviť. Počet snímok nemá pevný limit v rozhraní; veľa záberov v plnom rozlíšení potrebuje adekvátnu RAM.
-- Táto verzia nemá ukladanie a obnovu celých rozpracovaných projektov.
+```sh
+sudo apt install python3-venv libegl1 libopengl0 libxkbcommon-x11-0 libxcb-cursor0
+```
 
-## Ukážka
+To check setup without opening the app, run the same launcher with `--check`. If an existing `.venv` was created with an unsupported Python version or is incomplete, rename that folder and rerun the launcher. Your image files are unaffected.
 
-Dodané demo je pôvodný procedurálne vygenerovaný obraz s označením **SYNTHETIC DEMO**. Neobsahuje používateľove fotografie ani externú referenciu. Slúži na skúšanie registrácie a ovládania; nie je skutočnou fotografiou Mesiaca, mapou jeho povrchu ani mineralogickými dátami. Generátor je v `lunarhdr/publicdemo.py`, pôvod obrázkov opisuje `lunarhdr/assets/PROVENANCE.md`.
+The pinned binary dependencies target modern systems: macOS 13+, Windows 10/11, and Linux x86_64 with glibc 2.34+ (such as Ubuntu 22.04+). The previous validated CI run passed for all four targets listed above. Interactive app testing has been performed on macOS; successful CI builds do not replace visual testing on each target computer.
 
-## Samostatné aplikácie
+If you prefer manual setup, run the following commands from the cloned repository. No environment activation is required.
+
+**Windows:**
+
+```powershell
+py -3.11 -m venv .venv
+.venv\Scripts\python.exe -m pip install -r requirements.txt
+.venv\Scripts\python.exe main.py
+```
+
+**macOS / Linux:**
+
+```sh
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python main.py
+```
+
+## Workflow
+
+1. Load two or more photographs. Add further exposures to the list, replace individual frames or remove them. Choose a sharp, well-exposed frame as the reference; it determines the alignment canvas and output dimensions before cropping.
+2. Set each frame's EV relative to the reference. When every FITS file contains an exposure time, EV values are filled from the headers. For example, exposures of 1/1000, 1/250 and 1/60 second at the same ISO and aperture are approximately −2, 0 and +2 EV. If metadata is missing, enter EV values manually; the initial zeros are not estimates of the actual exposure. JPEG EXIF exposure times are not read automatically.
+3. Choose HDR or exposure fusion, then align and merge. Inspect the alignment diagnostics and use manual adjustment if registration is uncertain.
+4. Try **Mineral Moon**, or adjust saturation, temperature, contrast, detail and the other sliders. Compare the result with the selected reference frame.
+5. In **Dokončenie** (Finishing), at the bottom of the right panel, keep the original star background, suppress small bright points or add synthetic stars as a visual effect. These options do not modify the source files.
+6. Select a crop with the mouse and optionally enable a custom text signature. You can reset the crop or edit the signature.
+7. Export the finished image as PNG, JPEG or 16-bit TIFF. For further HDR processing, export a linear Radiance `.hdr` file.
+
+## How the processing modes work
+
+**HDR from ordinary images** converts input sRGB colors to linear values, accounts for the supplied EV values and combines exposures with weighted blending. The floating-point output preserves values above 1; the preview uses tone mapping. This produces relative HDR under an assumed sRGB response. It is not sensor calibration or a precise brightness measurement.
+
+**HDR from FITS** uses the original linear samples after applying FITS `BSCALE/BZERO` scaling. Preview contrast does not change the samples used for merging. `EXPTIME` values allow intensity to be normalized per unit time; inputs already marked as rates are not divided by exposure time again. Frames must have compatible units and calibration. Supported units include ADU, DN, counts, electrons and photons, as well as their per-second forms. Other calibrated units, such as Jy/sr, require conversion first, or you can use visual exposure fusion. Automatic EV suggestions assume the same gain, aperture and filters. When exposure times differ by more than 1000×, the app warns you to check stack normalization. For stacks that have already been normalized in brightness, verify EV manually: total integration time may not represent a brightness difference in the stored pixels. Do not combine ordinary sRGB images and FITS data with physical units in one radiometric HDR merge; use exposure fusion for a visual combination.
+
+**Exposure fusion** combines usable regions from the exposures into a displayable image. It does not produce linear HDR and cannot export HDR radiance. The distinction between HDR and exposure fusion is also covered in the [OpenCV documentation](https://docs.opencv.org/4.12.0/d2/df0/tutorial_py_hdr.html).
+
+**Mineral Moon** enhances existing color differences. The **Neutralizácia farieb** (Color neutralization) slider first balances the average color cast in the bright part of the lunar disk. It assumes the Moon is approximately neutral gray, and its strength can be reduced or disabled. The Mineral Moon preset enables it so that the preset does not simply amplify an overall yellow or green cast. It cannot recover real color information from monochrome data and is not a mineralogical analysis. Color noise and white balance affect the result. Your exposure stack controls the amount of surrounding glow. Mineral Moon selectively enhances recorded surface colors while preserving their brightness and protecting the surrounding glow. It does not impose a blue/copper palette: the achievable colors and detail depend on the captures. Star suppression remains a separate finishing choice.
+
+PNG, JPEG and TIFF exports include slider adjustments, the selected star background, crop and signature. Radiance HDR exports contain the full base linear merge, without creative adjustments, cropping, signatures or tone mapping. Added stars are a deterministic visual effect, not recorded astronomical objects. Star suppression estimates small bright points outside the lunar disk, so inspect the preview.
+
+The save dialog starts at an absolute path in your Pictures folder, or your home folder as a fallback. After a successful export, the app remembers the chosen folder for the current session. Write errors identify the destination and explain the problem; the result remains available for another export attempt.
+
+## Supported inputs and practical limits
+
+- JPEG, PNG and TIFF; 8-bit and 16-bit inputs, RGB and grayscale.
+- FITS (`.fits`, `.fit`, `.fts`, including gzip and `.fits.fz`): 2D monochrome images and RGB image arrays. The first image HDU is used, including image extensions and compressed HDUs. Integer and floating-point values and FITS scaling are supported; working image arrays use float32.
+- FITS saturation levels are read from `SATURATE`, `SATLEVEL` or `SATURLEV`. Otherwise, integer data uses the storage type's upper limit. If the sensor saturates earlier, add the correct level to the FITS header. The maximum value in a floating-point image is not automatically treated as clipped.
+- Invalid FITS samples (`NaN`, `Inf`, `BLANK`) are masked. Negative calibrated samples are not individually shifted by adding a constant; negative values in the final nonnegative HDR output are clipped with a warning. Spectral/time cubes and undeveloped 2D Bayer data are not treated as RGB: debayer them or select an image plane first. Three-channel RGB exports with a stale `BAYERPAT` header, such as some DWARF exports, are read as already-developed RGB with a warning and are not debayered again.
+- For camera RAW or SER files, export a color TIFF first. Use sRGB when exporting: full ICC color management and RAW development are outside the scope of this version.
+- Frames should show the same lunar phase, captured close together, with a visible disk and shared surface detail. Extreme cropping, clouds, weak signal or complete clipping can prevent automatic alignment.
+- Registration supports translation, scaling and rotation. It does not compensate for local atmospheric distortion or trails from moving stars.
+- Detail clipped in every exposure cannot be recovered. The interface has no fixed frame-count limit, but large stacks at full resolution require sufficient RAM.
+- This version does not save or restore complete editing projects.
+
+## Documentation photograph and built-in demo
+
+The **Mineral Moon image in this README is a real photographic result**, processed from lunar FITS captures supplied by the maintainer. The original input FITS files are not distributed.
+
+The **built-in demo is separate**: it is an original procedurally generated image labeled **SYNTHETIC DEMO**. It contains no user photographs or external reference image. It is intended for trying registration and the controls; it is not a real photograph of the Moon, a map of its surface or mineralogical data. The generator is in `lunarhdr/publicdemo.py`, and image provenance is documented in [docs/IMAGES.md](docs/IMAGES.md) and [the bundled asset notes](lunarhdr/assets/PROVENANCE.md).
+
+## Building standalone apps
+
+Use the Python executable from your local environment for these commands: `.venv\Scripts\python.exe` on Windows or `.venv/bin/python` on macOS/Linux, in place of `python` below.
 
 ```sh
 python -m pip install -r requirements-dev.txt
@@ -76,10 +123,17 @@ python -m pytest -q
 python build.py
 ```
 
-Výsledok je v `dist/`. Samostatný balík sa zostavuje na cieľovom operačnom systéme a architektúre. Workflow `.github/workflows/build.yml` testuje a pripravuje macOS ARM, macOS Intel, Windows a Linux buildy pri pushi do `main`, pull requeste alebo manuálnom spustení. Výsledné ZIP archívy nájdeš medzi artefaktmi konkrétneho behu v GitHub Actions. Runner platformy vychádzajú z [dokumentácie GitHub](https://docs.github.com/en/actions/reference/runners/github-hosted-runners). [Qt for Python](https://doc.qt.io/qtforpython-6.8/deployment/index.html) podporuje tieto tri desktopové platformy.
+The result is placed in `dist/`. Build standalone packages on the target operating system and architecture. The `.github/workflows/build.yml` workflow tests and builds macOS Apple silicon, macOS Intel, Windows x64 and Linux x64 packages on pushes to `main`, pull requests and manual runs. **Local 0.4.0 verification: 113 tests passed on macOS.** CI also launches each packaged app and waits for the demo preview to load; check the [latest Actions run](https://github.com/Kwispy232/lunar-hdr-studio/actions/workflows/build.yml) for the current revision. Windows collects one fewer test because it has one launcher instead of two Unix launchers. ZIP archives are available from each successful run's artifacts. Runner platforms are described in the [GitHub documentation](https://docs.github.com/en/actions/reference/runners/github-hosted-runners); [Qt for Python](https://doc.qt.io/qtforpython-6.8/deployment/index.html) supports these three desktop operating systems.
 
-Mac balík je lokálny vývojový build bez Apple Developer notarizácie. Lokálne a CI overenia opisuje `VALIDATION.md`; dokončenie buildu nenahrádza vizuálne odskúšanie na cieľovom počítači.
+The Mac package is a development build without Apple Developer notarization. See `VALIDATION.md` for local and CI checks. A successful build does not replace visual testing on the target computer.
 
-## Technológie
+## Technology
 
-Python, PySide6/Qt, OpenCV, NumPy, Pillow, tifffile a Astropy. Verzie sú pripnuté v `requirements.txt`. FITS škálovanie a HDU čítanie používa [Astropy FITS](https://docs.astropy.org/en/stable/io/fits/usage/image.html). Qt/PySide sa používajú dynamicky; informácie o licenciách závislostí sú v ich distribúciách. Pribalené licenčné oznámenia sú v `lunarhdr/assets/licenses/`. Verejné buildy používajú tieto dynamické knižnice; Apple Developer notarizácia a podpis Windows nie sú nastavené.
+Python, PySide6/Qt, OpenCV, NumPy, Pillow, tifffile and Astropy. Dependency versions are pinned in `requirements.txt`. FITS scaling and HDU reading use [Astropy FITS](https://docs.astropy.org/en/stable/io/fits/usage/image.html). Qt/PySide libraries are dynamically linked; dependency licenses are included in their distributions. Bundled license notices are in `lunarhdr/assets/licenses/`. Public builds use these dynamic libraries; Apple Developer notarization and Windows code signing are not configured.
+
+
+## License
+
+The project's original source code is available under the [MIT License](LICENSE). Third-party dependencies retain their own licenses; bundled notices are in `lunarhdr/assets/licenses/`.
+
+Photographs, reference images and other assets have separate rights and credits. The MIT code license does not relicense third-party images. See [image provenance](docs/IMAGES.md) for the photographic example and [bundled asset provenance](lunarhdr/assets/PROVENANCE.md) for the demo. The real lunar example in this README is used with the user's authorization; its original FITS captures are not included.

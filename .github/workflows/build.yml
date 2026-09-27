@@ -34,6 +34,18 @@ jobs:
         run: python -m pytest -q
       - name: Build desktop application
         run: python build.py
+      - name: Launch packaged application
+        shell: python
+        run: |
+          from pathlib import Path
+          import subprocess
+          import sys
+
+          if sys.platform == 'darwin':
+              executable = Path('dist/LunarHDR.app/Contents/MacOS/LunarHDR')
+          else:
+              executable = Path('dist/LunarHDR') / ('LunarHDR.exe' if sys.platform == 'win32' else 'LunarHDR')
+          subprocess.run([str(executable.resolve()), '--smoke-test'], check=True, timeout=60)
       - name: Upload application
         uses: actions/upload-artifact@v4
         with:

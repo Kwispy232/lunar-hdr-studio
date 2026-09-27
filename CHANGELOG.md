@@ -1,5 +1,13 @@
 # Changes
 
+## 0.4.0
+
+- Improved Mineral Moon color separation using measured surface color differences, with luminance and gamut protection. Exposure glow remains controlled by the source stack and exposure adjustments.
+- Made English the primary README, retained a linked Slovak translation, and replaced the documentation's synthetic preview with a result from real lunar FITS captures.
+- Added the MIT license for original project code and included it in standalone packages.
+- Added portable clone-and-run setup for Python 3.11–3.14 on macOS, Windows and Linux. Launchers reuse matching dependencies, preserve command-line arguments and support `--check`.
+- Added clean-checkout launcher tests and a packaged startup check on all four CI targets.
+
 ## 0.3.0
 
 - Fixed PNG export when the desktop launcher starts the app in `/`: the save dialog now defaults to an absolute writable Pictures folder, with a home-folder fallback.

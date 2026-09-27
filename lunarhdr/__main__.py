@@ -25,7 +25,22 @@ def main():
     window.setWindowIcon(app.windowIcon())
     window.show()
     if "--smoke-test" in sys.argv:
-        QTimer.singleShot(1800, app.quit)
+        # A successful boot includes the bundled image and the asynchronous
+        # preview worker, not just creating an empty top-level window.
+        from time import monotonic
+        deadline = monotonic() + 30
+        smoke_timer = QTimer(window)
+
+        def check_startup():
+            if not window._busy and len(window.frames) == 3 and window._preview_base is not None:
+                smoke_timer.stop()
+                app.exit(0)
+            elif monotonic() >= deadline:
+                smoke_timer.stop()
+                app.exit(1)
+
+        smoke_timer.timeout.connect(check_startup)
+        smoke_timer.start(100)
     return app.exec()
 
 

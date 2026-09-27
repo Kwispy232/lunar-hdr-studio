@@ -26,6 +26,7 @@ def main():
         "--workpath", str(Path(args.work).resolve() / "pyinstaller"),
         "--specpath", str(Path(args.work).resolve()),
         "--add-data", str(ROOT / "lunarhdr" / "assets") + ":lunarhdr/assets",
+        "--add-data", str(ROOT / "LICENSE") + ":lunarhdr/assets",
         "--exclude-module", "PySide6.QtWebEngineCore",
         "--exclude-module", "PySide6.QtQml",
         # Windows scans imported packages for DLLs; Astropy's optional plotting

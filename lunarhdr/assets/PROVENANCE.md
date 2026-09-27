@@ -19,6 +19,7 @@ python -m lunarhdr.publicdemo
 
 `icon.svg` is original project vector artwork composed of simple geometric
 shapes. `icon.icns` is its rasterized application-icon counterpart. These assets
-are original project material; this provenance statement does not grant a separate
-reuse license. Dependency license texts under `licenses/` retain their respective
-upstream licenses.
+are original project material covered by the MIT license at the repository root.
+Dependency license texts under `licenses/` retain their respective upstream
+licenses. Photographic documentation examples have separate provenance in
+`docs/IMAGES.md` and are not bundled as application demo assets.

@@ -1,9 +1,11 @@
 #!/bin/sh
-set -e
-cd "$(dirname "$0")"
-if [ ! -x .venv/bin/python ]; then
-  python3 -c 'import sys; assert sys.version_info >= (3, 11), "Install Python 3.11 or newer"'
-  python3 -m venv .venv
-fi
-.venv/bin/python -m pip install --quiet -r requirements.txt
-exec .venv/bin/python main.py
+# Works from any working directory, including a checkout path containing spaces.
+set -eu
+cd "$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+for python in .venv/bin/python python3.11 python3.12 python3.13 python3.14 python3 python; do
+  if "$python" -c 'import sys; sys.exit(not ((3, 11) <= sys.version_info[:2] < (3, 15)))' 2>/dev/null; then
+    exec "$python" launcher.py "$@"
+  fi
+done
+printf '%s\n' 'Lunar HDR needs Python 3.11–3.14. Install it from https://www.python.org/downloads/ and try again.' >&2
+exit 1

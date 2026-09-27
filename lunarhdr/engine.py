@@ -700,6 +700,94 @@ def merge_hdr(alignment: AlignmentResult, evs=None, mode: str = "radiance", prog
     return Composite(base, linear.astype(np.float32), mode, warnings)
 
 
+def _color_disk(image: np.ndarray) -> dict | None:
+    """Find the surface boundary for color sampling without following its glow.
+
+    Registration retains its own cautious disk estimate. For color masks only,
+    a steep radial brightness drop can distinguish the limb from a diffuse halo.
+    """
+    small, ratio = _small(image, limit=1000)
+    disk = _detect_disk(small)
+    if disk is None:
+        return None
+    cx, cy = disk["center"]
+    radius = disk["radius"]
+    radii = np.linspace(radius * .55, radius * 1.15, max(32, round(radius * 1.2)), dtype=np.float32)
+    angles = np.linspace(0, 2 * math.pi, 180, endpoint=False, dtype=np.float32)
+    map_x = cx + np.cos(angles)[:, None] * radii[None, :]
+    map_y = cy + np.sin(angles)[:, None] * radii[None, :]
+    samples = cv2.remap(_luma(small), map_x, map_y, cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT_101)
+    profile = np.median(samples, axis=0)
+    profile = cv2.GaussianBlur(profile[None, :], (0, 0), 1.3).ravel()
+    steepest = int(np.argmax(-np.diff(profile)))
+    start, end = max(0, steepest - 3), min(len(profile) - 1, steepest + 4)
+    if end - start >= 4 and profile[start] - profile[end] > .035:
+        radius = float((radii[steepest] + radii[steepest + 1]) / 2)
+    return {"center": (cx / ratio, cy / ratio), "radius": radius / ratio}
+
+
+def _mineral_color(image: np.ndarray, amount: float) -> np.ndarray:
+    """Stretch measured surface color ratios while retaining linear luminance.
+
+    Red/green and blue/green ratios are denoised separately from surface detail.
+    Their deviations from the measured lunar median are amplified with bounded
+    gains. No hue is assigned from brightness, terrain or a synthetic palette.
+    """
+    if amount <= 0 or (np.array_equal(image[..., 0], image[..., 1]) and np.array_equal(image[..., 1], image[..., 2])):
+        return image
+    disk = _color_disk(image)
+    if disk is None:
+        return image
+    cx, cy = disk["center"]
+    radius = disk["radius"]
+    yy, xx = np.ogrid[:image.shape[0], :image.shape[1]]
+    relative_radius = np.sqrt((xx - cx) ** 2 + (yy - cy) ** 2) / max(radius, 1.)
+    # Leave the strong chromatic fringe and all halo/background pixels alone.
+    feather = np.clip((.98 - relative_radius) / .10, 0, 1).astype(np.float32)
+    feather = feather * feather * (3 - 2 * feather)
+    linear = _linear(image)
+    luminance = _luma(linear)
+    valid = (relative_radius < .98) & (luminance > .006) & (linear.min(axis=2) > .0003)
+    sample = valid & (relative_radius < .85) & (linear.max(axis=2) < .96)
+    if np.count_nonzero(sample) < 32:
+        return image
+    green = np.maximum(linear[..., 1], 1e-7)
+    opponents = np.stack((np.log(np.maximum(linear[..., 0], 1e-7) / green),
+                          np.log(np.maximum(linear[..., 2], 1e-7) / green)), axis=2)
+    sigma = max(.65, radius / 220.)
+    coverage = cv2.GaussianBlur(valid.astype(np.float32), (0, 0), sigma)
+    smoothed = cv2.GaussianBlur(opponents * valid[..., None], (0, 0), sigma)
+    smoothed /= np.maximum(coverage[..., None], 1e-6)
+    center = np.median(smoothed[sample], axis=0)
+    residual = smoothed - center
+    spread = np.percentile(np.abs(residual[sample]), 85, axis=0)
+    if np.max(spread) < .0005:
+        return image
+    # The floors prevent tiny quantization/color noise from gaining arbitrary
+    # saturation. Lower-signal red/green data often need more gain than blue.
+    noise = np.median(np.abs(opponents[sample] - smoothed[sample]), axis=0) * 1.4826
+    scale = np.maximum.reduce((spread, noise * 6, np.array([.006, .020])))
+    extra_gain = np.minimum(np.array([.40, .72]) / scale, np.array([60., 36.]))
+    enhanced = opponents + residual * (extra_gain * amount)
+    enhanced = np.clip(enhanced, -3, 3)
+    ratios = np.stack((np.exp(enhanced[..., 0]), np.ones_like(luminance), np.exp(enhanced[..., 1])), axis=2).astype(np.float32)
+    color = ratios * (luminance / np.maximum(_luma(ratios), 1e-7))[..., None]
+    neutral = luminance[..., None]
+    delta = color - neutral
+    # Gamut compression reduces only colorfulness when a channel would clip.
+    # It neither changes the pixel's luminance nor clips surface detail to white.
+    positive = np.maximum(delta.max(axis=2), 1e-8)
+    negative = np.maximum(-delta.min(axis=2), 1e-8)
+    gamut = np.minimum(1., np.minimum((1 - luminance) / positive, luminance / negative))
+    color = neutral + delta * np.clip(gamut, 0, 1)[..., None]
+    blend = feather * valid
+    result_linear = linear * (1 - blend[..., None]) + color * blend[..., None]
+    result = image.copy()
+    changed = blend > 0
+    result[changed] = np.clip(_srgb(result_linear[changed]), 0, 1)
+    return result
+
+
 def adjust_image(base: np.ndarray, settings: dict) -> np.ndarray:
     """Render a fresh preview from an unchanged display-referred base image."""
     image = _rgb(base).copy()
@@ -717,12 +805,11 @@ def adjust_image(base: np.ndarray, settings: dict) -> np.ndarray:
         display_luma = _luma(image)
         bright_level = max(.05, float(np.percentile(display_luma, 99)) * .35)
         useful = (display_luma > bright_level) & (image.max(axis=2) < .985) & (image.min(axis=2) > .008)
-        disk_image, disk_ratio = _small(image, limit=1000)
-        disk = _detect_disk(disk_image)
+        disk = _color_disk(image)
         if disk:
             surface = np.zeros(image.shape[:2], np.uint8)
-            center = tuple(round(coordinate / disk_ratio) for coordinate in disk["center"])
-            cv2.circle(surface, center, round(disk["radius"] * .85 / disk_ratio), 1, -1)
+            center = tuple(round(coordinate) for coordinate in disk["center"])
+            cv2.circle(surface, center, round(disk["radius"] * .85), 1, -1)
             useful &= surface.astype(bool)
         if np.count_nonzero(useful) >= 32:
             linear = _linear(image)
@@ -752,20 +839,14 @@ def adjust_image(base: np.ndarray, settings: dict) -> np.ndarray:
     if contrast:
         image = (image - .5) * (2 ** (contrast * 1.35)) + .5
     image = np.clip(image, 0, 1)
-    # Lab chroma amplification reveals existing weak lunar color; it does not
-    # assign fabricated mineral labels or infer chemical composition.
     saturation = value("saturation", default=100., low=0, high=200) / 100
     mineral = value("mineral", low=0) / 100
-    if saturation != 1 or mineral:
+    if saturation != 1:
         lab = cv2.cvtColor(image.astype(np.float32), cv2.COLOR_RGB2Lab)
-        if mineral:
-            # Suppress color speckles before amplifying the chroma only.
-            a = cv2.GaussianBlur(lab[..., 1], (0, 0), .65 + mineral)
-            b = cv2.GaussianBlur(lab[..., 2], (0, 0), .65 + mineral)
-            lab[..., 1] = a
-            lab[..., 2] = b
-        lab[..., 1:] *= saturation * (1 + mineral * 3.)
+        lab[..., 1:] *= saturation
         image = np.clip(cv2.cvtColor(lab, cv2.COLOR_Lab2RGB), 0, 1)
+    if mineral:
+        image = _mineral_color(image, mineral)
     denoise = value("denoise", low=0) / 100
     if denoise:
         filtered = cv2.bilateralFilter(image.astype(np.float32), 5, .025 + .10 * denoise, 2.5)
