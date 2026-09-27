@@ -64,7 +64,7 @@ The Mac package's signature was verified after extraction into a clean temporary
 
 Local processing was also exercised on four real DWARF RGB FITS captures containing stale `BAYERPAT` metadata. Two detailed frames registered using surface features with a median matching-point residual below one quarter of a pixel. A clipped exposure used disk-edge registration, low confidence and a manual-review warning.
 
-The README now includes an app-processed photographic example from maintainer-supplied lunar FITS. Its provenance and permitted use are documented in [docs/IMAGES.md](docs/IMAGES.md). The raw FITS, their original filenames, private filesystem paths and the original reference photograph remain excluded from the public repository and distribution packages.
+The README cover is the unchanged PNG supplied by the maintainer, created from exactly three DWARF Mini photographs: one underexposed, one normally exposed and one overexposed. Its provenance and permitted use are documented in [docs/IMAGES.md](docs/IMAGES.md). The source photographs and earlier FITS validation inputs, their original filenames, private filesystem paths and separately supplied reference photographs remain excluded from the public repository and distribution packages.
 
 The application's bundled demo remains a separate, labeled procedural image. Automated image fixtures are also generated synthetically; they do not require private photographs.
 

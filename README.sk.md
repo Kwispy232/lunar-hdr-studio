@@ -4,9 +4,9 @@
 
 Lokálna desktopová aplikácia pre skladanie dvoch alebo viacerých expozícií Mesiaca a tvorbu vzhľadu **Mineral Moon**. Verzia **0.4.0** podporuje FITS, ľubovoľný počet expozícií, hviezdne pozadie, vlastný podpis a orez obrázka. Fotografie sa nikam neposielajú. Rozhranie je v slovenčine.
 
-![Mineral Moon vytvorený zo skutočných lunárnych FITS snímok](docs/mineral-moon.png)
+![Mesiac z troch expozícií DWARF Mini: podexponovanej, normálnej a preexponovanej](docs/mineral-moon.png)
 
-Skutočný fotografický príklad: expozičná fúzia FITS snímok Mesiaca s presetom Mineral Moon a ručnou úpravou zobrazovacej expozície −0,5 EV. Pôvodné FITS súbory sa v repozitári nezverejňujú. Táto fotografia je oddelená od procedurálnej ukážky pribalenej v aplikácii.
+Mesiac odfotený pomocou **DWARF Mini** a spracovaný v Lunar HDR Studio z **troch expozícií**: jednej podexponovanej, jednej normálne exponovanej a jednej preexponovanej.
 
 ## Rýchly štart
 
@@ -103,7 +103,7 @@ Exportný dialóg začína v absolútnej ceste priečinka Obrázky (prípadne v 
 
 ## Fotografia v dokumentácii a ukážka v aplikácii
 
-**Obrázok Mineral Moon v tomto README je skutočný fotografický výsledok**, spracovaný z používateľových lunárnych FITS snímok. Pôvodné vstupné FITS súbory sa nezverejňujú.
+**Úvodný obrázok v tomto README je skutočný fotografický výsledok** presne z troch snímok DWARF Mini: podexponovanej, normálne exponovanej a preexponovanej. Hotové PNG dodal správca projektu a je priložené bez ďalších úprav. Pôvodné fotografie sa nezverejňujú.
 
 **Ukážka v aplikácii je oddelená.** Dodané demo je pôvodný procedurálne vygenerovaný obraz s označením **SYNTHETIC DEMO**. Neobsahuje používateľove fotografie ani externú referenciu. Slúži na skúšanie registrácie a ovládania; nie je skutočnou fotografiou Mesiaca, mapou jeho povrchu ani mineralogickými dátami. Generátor je v `lunarhdr/publicdemo.py`, pôvod obrázkov opisujú [docs/IMAGES.md](docs/IMAGES.md) a [poznámky k pribaleným súborom](lunarhdr/assets/PROVENANCE.md).
 
@@ -130,4 +130,4 @@ Python, PySide6/Qt, OpenCV, NumPy, Pillow, tifffile a Astropy. Verzie sú pripnu
 
 Pôvodný zdrojový kód projektu je dostupný pod [licenciou MIT](LICENSE). Závislosti tretích strán si zachovávajú vlastné licencie; pribalené oznámenia sú v `lunarhdr/assets/licenses/`.
 
-Fotografie, referenčné obrázky a ďalšie materiály majú samostatné práva a označenie pôvodu. Licencia MIT pre kód nemení licencie obrázkov tretích strán. Pôvod pribalených obrázkov opisuje `lunarhdr/assets/PROVENANCE.md`. Skutočný lunárny príklad v tomto README sa používa so súhlasom používateľa; pôvodné FITS snímky sa nepribaľujú.
+Fotografie, referenčné obrázky a ďalšie materiály majú samostatné práva a označenie pôvodu. Licencia MIT pre kód nemení licencie obrázkov tretích strán. Pôvod pribalených obrázkov opisuje `lunarhdr/assets/PROVENANCE.md`. Skutočný lunárny príklad v tomto README sa používa so súhlasom správcu projektu; pôvodné fotografie sa nepribaľujú.

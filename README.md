@@ -4,9 +4,9 @@
 
 A local desktop app for combining two or more lunar exposures and creating a **Mineral Moon** look. Version **0.4.0** supports FITS, any number of exposures, star backgrounds, custom signatures and cropping. Your photographs stay on your computer. The app interface is currently in Slovak.
 
-![Mineral Moon result processed from real lunar FITS captures](docs/mineral-moon.png)
+![Lunar image from three DWARF Mini exposures: underexposed, normal and overexposed](docs/mineral-moon.png)
 
-Real photographic example: exposure fusion of lunar FITS captures supplied by the maintainer, with the Mineral Moon preset and a manual −0.5 EV display-exposure adjustment. The original FITS files are not distributed with this repository. This photograph is separate from the procedural demo bundled with the app.
+Moon photographed with **DWARF Mini** and processed in Lunar HDR Studio from **three exposures**: one underexposed, one normally exposed and one overexposed.
 
 ## Quick start
 
@@ -109,7 +109,7 @@ The save dialog starts at an absolute path in your Pictures folder, or your home
 
 ## Documentation photograph and built-in demo
 
-The **Mineral Moon image in this README is a real photographic result**, processed from lunar FITS captures supplied by the maintainer. The original input FITS files are not distributed.
+The **cover image in this README is a real photographic result** from exactly three DWARF Mini photos: underexposed, normally exposed and overexposed. The finished PNG was supplied by the project maintainer and is reproduced unchanged. The source photos are not distributed.
 
 The **built-in demo is separate**: it is an original procedurally generated image labeled **SYNTHETIC DEMO**. It contains no user photographs or external reference image. It is intended for trying registration and the controls; it is not a real photograph of the Moon, a map of its surface or mineralogical data. The generator is in `lunarhdr/publicdemo.py`, and image provenance is documented in [docs/IMAGES.md](docs/IMAGES.md) and [the bundled asset notes](lunarhdr/assets/PROVENANCE.md).
 
@@ -136,4 +136,4 @@ Python, PySide6/Qt, OpenCV, NumPy, Pillow, tifffile and Astropy. Dependency vers
 
 The project's original source code is available under the [MIT License](LICENSE). Third-party dependencies retain their own licenses; bundled notices are in `lunarhdr/assets/licenses/`.
 
-Photographs, reference images and other assets have separate rights and credits. The MIT code license does not relicense third-party images. See [image provenance](docs/IMAGES.md) for the photographic example and [bundled asset provenance](lunarhdr/assets/PROVENANCE.md) for the demo. The real lunar example in this README is used with the user's authorization; its original FITS captures are not included.
+Photographs, reference images and other assets have separate rights and credits. The MIT code license does not relicense third-party images. See [image provenance](docs/IMAGES.md) for the photographic example and [bundled asset provenance](lunarhdr/assets/PROVENANCE.md) for the demo. The real lunar example in this README is used with the maintainer's authorization; its source photographs are not included.

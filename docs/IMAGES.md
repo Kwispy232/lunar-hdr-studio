@@ -1,23 +1,23 @@
 # Documentation images
 
-`mineral-moon.png` is a real photographic result made with Lunar HDR Studio
-from lunar FITS captures supplied by the project maintainer. The captures were
-aligned and combined with **exposure fusion**, then developed with the app's
-Mineral Moon preset at 65% mineral strength, with a manual display-exposure
-adjustment of −0.5 EV. The preset itself leaves exposure at 0 EV. This is a visual composite, not calibrated HDR radiance
-or a mineralogical measurement. Its surface detail and color variations come
-from the captures; no generated lunar texture or replacement sky was added.
+`mineral-moon.png` is the finished PNG supplied by the project maintainer for the README cover.
+It is reproduced byte-for-byte, without resizing, recoloring or other image edits.
 
-The example is published at the maintainer's request. The original FITS files,
-their metadata and filenames, and the separately supplied reference photographs
-are not distributed. The photographic example retains its author's rights;
-the project's MIT software license does not grant a separate photographic
-reuse license.
+The maintainer identified the capture device as **DWARF Mini** and stated that the
+image was created from exactly **three photos**:
 
-These source captures have a lunar disk roughly 480 pixels across and weak
-color differences. The example shows the measured warm/teal variations; it
-does not claim to reproduce the resolution or blue/copper tones of a different
-photograph. Glow is retained from the exposure stack.
+- One underexposed photo.
+- One normally exposed photo.
+- One overexposed photo.
+
+The source photos, their metadata and filenames, private filesystem paths, and
+separately supplied reference photographs are not distributed. The example is
+published at the maintainer's request and retains its author's rights; the project's
+MIT software license does not grant a separate photographic reuse license.
+
+SHA-256 of the unchanged PNG:
+
+`b0cd12d580887eac32b6b79d8b44e38b2f26fcb6e97b1c38fe87af040741caca`
 
 The application demo is a different image: the labeled procedural test scene
 in `lunarhdr/assets/demo_reference.png`. Its provenance is recorded in
