@@ -1,17 +1,17 @@
 # Validation for 0.4.0
 
-This document distinguishes the verified 0.3.0 baseline from checks for the upcoming 0.4.0 release. Local testing was performed on September 27, 2026, using macOS 26.6.2 on Apple silicon, Python 3.11.15, Qt 6.11.2 and OpenCV 5.0.0.
+This document records the verified 0.4.0 release and retained regression coverage from 0.3.0. Local testing was performed on September 27, 2026, using macOS 26.6.2 on Apple silicon, Python 3.11.15, Qt 6.11.2 and OpenCV 5.0.0.
 
 ## Current release status
 
 - **Verified baseline:** all 92 tests, standalone builds and artifact uploads passed on macOS Apple silicon, macOS Intel, Windows x64 and Ubuntu 24.04 x64 in [GitHub Actions run 36306875039](https://github.com/Kwispy232/lunar-hdr-studio/actions/runs/36306875039), commit `fe90af8`.
-- **0.4.0 launcher checks:** 11 tests passed locally on macOS. The suite contains 11 cases on Unix and 10 on Windows because Windows has one entry script rather than two. Execution of the Windows cases awaits the new CI run.
+- **0.4.0 launcher checks:** 11 tests passed locally on macOS. The suite contains 11 cases on Unix and 10 on Windows because Windows has one entry script rather than two. The corresponding Windows cases also passed in CI.
 - **0.4.0 full suite:** all 113 tests passed locally on macOS, including 10 new selective Mineral Moon regressions and 11 launcher tests. Windows collects 112 tests because only one launcher applies.
-- **Pending release checks:** packaged application startup checks and the new four-platform CI run. The baseline run above predates these changes.
+- **0.4.0 CI:** tests, builds, packaged startup with demo-preview loading and artifact uploads all passed on the four platforms in [run 36310250413](https://github.com/Kwispy232/lunar-hdr-studio/actions/runs/36310250413), code commit `cb601df`. macOS ARM/Intel and Linux each passed 113 tests; Windows passed 112.
 
 ## Image processing coverage
 
-The verified baseline covers:
+The regression suite covers:
 
 - Registration of textured lunar disks across exposure differences, translation, scale and rotation; arbitrary exposure counts; and a selectable reference frame.
 - Low confidence and a manual-review warning for disks without usable surface detail. A clipped disk's bright limb is distinguished from a wider surrounding halo.
@@ -48,6 +48,8 @@ Local automated checks cover real first-run virtual-environment creation without
 
 A separate clean source snapshot, in a temporary path containing spaces, passed both `--check` and the real application's `--smoke-test` from another working directory. It reused the existing installed environment and performed no package installation. The smoke check exercised application startup and readiness of the procedural demo preview.
 
+A fresh anonymous HTTPS clone of the public repository was then checked independently, with Git credentials disabled for that clone. From the unrelated working directory `/`, its normal `run.sh --check` created a new `.venv` and installed the pinned dependencies. `run.sh --smoke-test` subsequently exited successfully using Qt offscreen. This complete install-and-start check used Python 3.14.2 on macOS; the checkout remained clean.
+
 The local macOS Documents file provider sometimes marks Qt plugin files as hidden, which prevents Qt from discovering them. For this source smoke check only, the platform plugins were copied to a system temporary directory. This local environment workaround is not included in the application or launchers.
 
 ## Native macOS application checks
@@ -56,7 +58,7 @@ Earlier standalone Mac packages successfully imported five synthetic FITS, inclu
 
 The final 0.3.0 standalone package was launched through macOS LaunchServices. After merging the synthetic demo, a crop and text signature were selected through the interface and exported as PNG. The save dialog opened in Pictures; the written file was reloaded and confirmed as valid RGB PNG, 890 × 868 pixels. Clicking Mineral Moon applied its slider settings.
 
-The Mac package's signature was verified after extraction into a clean temporary directory. This is an ad-hoc signature, not Apple Developer notarization. New 0.4.0 package checks remain pending as listed above.
+The Mac package's signature was verified after extraction into a clean temporary directory. This is an ad-hoc signature, not Apple Developer notarization. The 0.4.0 Apple silicon package was also verified after extraction, and both macOS architectures passed their packaged startup checks in CI.
 
 ## Real-image checks and image provenance
 
@@ -68,6 +70,6 @@ The application's bundled demo remains a separate, labeled procedural image. Aut
 
 ## Platform verification limits
 
-The previous four-platform CI run passed all 92 tests and produced the four release archives. Their ZIP integrity, expected application executables and bundled license entries were checked after download. Interface tests in CI use Qt's offscreen platform.
+The 0.4.0 four-platform CI run passed the full suite, produced the four archives and launched every packaged executable until its bundled preview was ready. Release verification checks ZIP integrity, expected application executables and the bundled project MIT license; release assets include SHA256 checksums. Interface and packaged startup tests in CI use Qt's offscreen platform.
 
 Interactive use has been tested on macOS. Windows and Linux builds and automated tests do not constitute interactive testing on physical Windows or Linux computers. The latest release checks and downloadable artifacts are available in [GitHub Actions](https://github.com/Kwispy232/lunar-hdr-studio/actions/workflows/build.yml).
