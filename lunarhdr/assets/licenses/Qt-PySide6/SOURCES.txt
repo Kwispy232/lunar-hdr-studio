@@ -1,0 +1,24 @@
+Qt / PySide6 / Shiboken6 version 6.11.2
+
+Used dynamically as distributed in PySide6-Essentials and Shiboken6 wheels.
+The installed wheels did not contain standalone license-text files. Full
+upstream LICENSES directories were copied unmodified from the matching
+v6.11.2 tags in the official project mirrors:
+
+Qtbase: https://github.com/qt/qtbase/tree/v6.11.2/LICENSES
+PySide6 / Shiboken: https://github.com/pyside/pyside-setup/tree/v6.11.2/LICENSES
+
+SOURCE-MANIFEST.json files record each exact source URL and SHA-256 checksum.
+Qtbase attribution records accompany the license texts under ATTRIBUTIONS/.
+The directories include upstream license options and notices for components
+that may not be used by this application; copying a license text does not
+assert that every upstream component is included or grant a commercial license.
+
+Canonical source repositories:
+https://code.qt.io/cgit/pyside/pyside-setup.git/
+https://code.qt.io/cgit/qt/qtbase.git/
+
+Distribution and licensing references:
+https://pypi.org/project/PySide6-Essentials/6.11.2/
+https://doc.qt.io/qt-6/licensing.html
+https://doc.qt.io/qtforpython-6/licenses.html

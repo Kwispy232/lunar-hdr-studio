@@ -1,0 +1,27 @@
+Installed component inventory for the local development build
+
+The adjacent license texts were copied unmodified from installed runtime
+distributions. Each upstream component retains its own license.
+
+CPython 3.11.15: runtime stdlib LICENSE.txt copied to CPython/
+
+PySide6-Essentials 6.11.2: LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
+shiboken6 6.11.2: LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
+numpy 2.4.6: BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0
+opencv-python-headless 5.0.0.93: Apache 2.0
+Pillow 12.3.0: MIT-CMU
+tifffile 2026.3.3: BSD-3-Clause
+astropy 7.2.2: BSD-3-Clause
+pyerfa 2.0.1.5: BSD 3-Clause License
+astropy-iers-data 0.2026.9.21.0.56.25: BSD-3-Clause
+PyYAML 6.0.3: MIT
+packaging 26.3: Apache-2.0 OR BSD-2-Clause
+
+PySide6-Essentials and Shiboken6 wheels contain no standalone license-text
+files in this installed distribution. Their matching upstream 6.11.2 license
+directories are included under Qt-PySide6/, along with source URL/checksum
+manifests and Qtbase attribution records. See Qt-PySide6/SOURCES.txt.
+
+Build-time tools are installed from requirements-dev.txt. This inventory is
+not a claim that all transitive shared-library notices have been audited on
+every platform; binary redistributors must retain their platform bundle notices.
