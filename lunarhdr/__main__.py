@@ -21,12 +21,14 @@ def main():
     app.setStyle("Fusion")
     icon = Path(__file__).parent / "assets" / "icon.svg"
     app.setWindowIcon(QIcon(str(icon)))
-    window = MainWindow()
+    smoke_test = "--smoke-test" in sys.argv
+    window = MainWindow(show_onboarding=not smoke_test)
     window.setWindowIcon(app.windowIcon())
     window.show()
-    if "--smoke-test" in sys.argv:
+    if smoke_test:
         # A successful boot includes the bundled image and the asynchronous
-        # preview worker, not just creating an empty top-level window.
+        # preview worker and offline guide, not just an empty window. Avoid
+        # changing the user's first-run preference during this check.
         from time import monotonic
         deadline = monotonic() + 30
         smoke_timer = QTimer(window)
@@ -34,7 +36,11 @@ def main():
         def check_startup():
             if not window._busy and len(window.frames) == 3 and window._preview_base is not None:
                 smoke_timer.stop()
-                app.exit(0)
+                from lunarhdr.help_dialog import HelpDialog
+                guide = HelpDialog(window, initial_topic="export")
+                ready = (guide.topic_list.count() == 8
+                         and "16-bit TIFF" in guide.content.toPlainText())
+                app.exit(0 if ready else 1)
             elif monotonic() >= deadline:
                 smoke_timer.stop()
                 app.exit(1)

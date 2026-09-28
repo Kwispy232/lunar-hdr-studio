@@ -10,8 +10,8 @@ from typing import Callable
 
 import cv2
 import numpy as np
-from PySide6.QtCore import QPointF, QRectF, QStandardPaths, Qt, QThread, QTimer, Signal
-from PySide6.QtGui import QColor, QFont, QImage, QPainter, QPen, QPixmap
+from PySide6.QtCore import QPointF, QRectF, QSettings, QStandardPaths, Qt, QThread, QTimer, Signal
+from PySide6.QtGui import QAction, QColor, QFont, QImage, QKeySequence, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import (
     QApplication, QButtonGroup, QCheckBox, QComboBox, QDialog, QDoubleSpinBox,
     QFileDialog, QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QMainWindow,
@@ -21,13 +21,14 @@ from PySide6.QtWidgets import (
 
 from . import engine
 from .finishing import finish_image
+from .help_dialog import HelpDialog
 
-IMAGE_FILTER = "Obrázky a FITS (*.png *.jpg *.jpeg *.tif *.tiff *.bmp *.webp *.fit *.fits *.fts *.fit.gz *.fits.gz *.fts.gz *.fit.fz *.fits.fz *.fts.fz);;FITS (*.fit *.fits *.fts *.fit.gz *.fits.gz *.fts.gz *.fit.fz *.fits.fz *.fts.fz);;Všetky súbory (*)"
+IMAGE_FILTER = "Images and FITS (*.png *.jpg *.jpeg *.tif *.tiff *.bmp *.webp *.fit *.fits *.fts *.fit.gz *.fits.gz *.fts.gz *.fit.fz *.fits.fz *.fts.fz);;FITS (*.fit *.fits *.fts *.fit.gz *.fits.gz *.fts.gz *.fit.fz *.fits.fz *.fts.fz);;All files (*)"
 EXPORT_FORMATS = (
     ("PNG (*.png)", ".png", (".png",)),
     ("JPEG (*.jpg)", ".jpg", (".jpg", ".jpeg")),
     ("16-bit TIFF (*.tif)", ".tif", (".tif", ".tiff")),
-    ("Lineárna radiancia HDR bez úprav (*.hdr)", ".hdr", (".hdr",)),
+    ("Linear HDR radiance (unedited) (*.hdr)", ".hdr", (".hdr",)),
 )
 
 
@@ -100,6 +101,9 @@ QPushButton#preset:checked { color: #c1e9df; border: 1px solid #80b9aa; backgrou
 QToolButton:checked { color: #bfe4d9; background: #2c443b; border-color: #76a999; }
 QComboBox, QDoubleSpinBox, QSpinBox, QLineEdit { background: #101719; color: #c9d7dd; border: 1px solid #3a484e; border-radius: 5px; padding: 6px; min-height: 15px; }
 QComboBox QAbstractItemView { background: #1a2428; color: #deeaee; selection-background-color: #38564d; }
+QMenuBar, QMenu { background: #171c1f; color: #dbe3e5; }
+QMenuBar::item:selected, QMenu::item:selected { background: #38564d; }
+QMenu::item { padding: 7px 20px; }
 QComboBox::drop-down { border: 0; width: 23px; }
 QCheckBox { spacing: 7px; }
 QCheckBox::indicator { width: 14px; height: 14px; border: 1px solid #60766e; background: #14211c; border-radius: 3px; }
@@ -181,7 +185,7 @@ class ExposureCard(QFrame):
         self.ev.setValue(ev)
         self.ev.setSuffix(" EV")
         self.ev.setFixedWidth(98)
-        self.ev.setToolTip("Relatívna expozícia oproti vybranej referencii. Používa sa pri rádiometrickom HDR.")
+        self.ev.setToolTip("Exposure relative to the selected reference. Used for radiometric HDR merging.")
         self.ev.valueChanged.connect(lambda _value: self.evChanged.emit())
         top.addWidget(self.ev)
         outer.addLayout(top)
@@ -194,7 +198,7 @@ class ExposureCard(QFrame):
         middle.addWidget(self.thumbnail)
         copy = QVBoxLayout()
         copy.setSpacing(4)
-        self.filename = label("Vložiť obrázok", "section")
+        self.filename = label("Add an image", "section")
         self.filename.setWordWrap(True)
         self.filename.setMaximumWidth(136)
         self.details = label(description, "muted")
@@ -204,7 +208,7 @@ class ExposureCard(QFrame):
         copy.addWidget(self.details)
         middle.addLayout(copy, 1)
         outer.addLayout(middle)
-        self.browse = QPushButton("Vybrať súbor  ↗")
+        self.browse = QPushButton("Choose file  ↗")
         self.browse.setObjectName("quiet")
         self.browse.clicked.connect(lambda: self.requested.emit(self.index))
         actions = QHBoxLayout()
@@ -212,7 +216,7 @@ class ExposureCard(QFrame):
         self.remove_button = QPushButton("×")
         self.remove_button.setObjectName("quiet")
         self.remove_button.setFixedWidth(29)
-        self.remove_button.setToolTip("Odobrať túto expozíciu")
+        self.remove_button.setToolTip("Remove this exposure")
         self.remove_button.clicked.connect(lambda: self.removed.emit(self.index))
         actions.addWidget(self.remove_button)
         outer.addLayout(actions)
@@ -220,10 +224,10 @@ class ExposureCard(QFrame):
     def clear_frame(self):
         self.thumbnail.setPixmap(QPixmap())
         self.thumbnail.setText("＋")
-        self.filename.setText("Vložiť obrázok")
+        self.filename.setText("Add an image")
         self.filename.setToolTip("")
-        self.details.setText("Snímka zatiaľ chýba")
-        self.browse.setText("Vybrať súbor  ↗")
+        self.details.setText("No image loaded yet")
+        self.browse.setText("Choose file  ↗")
 
     def set_frame(self, frame):
         source = qimage(preview_size(frame.pixels, 180))
@@ -240,7 +244,7 @@ class ExposureCard(QFrame):
         exposure = f" · {seconds:.5g} s" if seconds is not None else ""
         self.details.setText(f"{width:,} × {height:,} · {source}{mono}{exposure}".replace(",", " "))
         self.details.setToolTip("\n".join(getattr(frame, "warnings", [])) or f"{frame.bit_depth} bit")
-        self.browse.setText("Zmeniť snímku  ↗")
+        self.browse.setText("Replace image  ↗")
 
     def dragEnterEvent(self, event):
         if self.isEnabled() and event.mimeData().hasUrls() and event.mimeData().urls()[0].isLocalFile():
@@ -288,7 +292,7 @@ class ImageCanvas(QWidget):
         self.update()
 
     def _emit_zoom(self):
-        self.zoomChanged.emit("Prispôsobiť" if abs(self.zoom - 1) < 0.01 else f"{self.zoom:.1f}×")
+        self.zoomChanged.emit("Fit" if abs(self.zoom - 1) < 0.01 else f"{self.zoom:.1f}×")
 
     def image_rect(self):
         if self.after is None:
@@ -305,7 +309,7 @@ class ImageCanvas(QWidget):
         if self.after is None:
             painter.setPen(QColor("#526870"))
             painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter,
-                             "Viac expozícií. Jeden Mesiac.\n\nVložte aspoň dve fotografie alebo FITS snímky.")
+                             "Multiple exposures. One Moon.\n\nAdd at least two photos or FITS images.")
             return
         painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
         rect = self.image_rect()
@@ -323,8 +327,8 @@ class ImageCanvas(QWidget):
             painter.setPen(QColor("#263a35"))
             painter.drawText(QRectF(split - 14, self.height()/2 - 12, 28, 24),
                              Qt.AlignmentFlag.AlignCenter, "‹ ›")
-            self._tag(painter, QRectF(12, 12, 106, 25), "Referencia")
-            self._tag(painter, QRectF(self.width() - 88, 12, 76, 25), "Výsledok")
+            self._tag(painter, QRectF(12, 12, 106, 25), "Reference")
+            self._tag(painter, QRectF(self.width() - 88, 12, 76, 25), "Result")
 
     def _tag(self, painter, rect, text):
         painter.setPen(Qt.PenStyle.NoPen)
@@ -444,13 +448,13 @@ class CropCanvas(QWidget):
 class CropDialog(QDialog):
     def __init__(self, pixels, crop_rect=(0, 0, 1, 1), parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Orezať kompozíciu")
+        self.setWindowTitle("Crop composition")
         self.resize(820, 660)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(18, 16, 18, 16)
         layout.setSpacing(12)
-        layout.addWidget(label("Vyberte výrez potiahnutím myši", "section"))
-        note = label("Výrez sa použije na náhľad aj PNG, JPEG a TIFF. Lineárny HDR export zostáva v plnom rozmere.", "muted")
+        layout.addWidget(label("Drag to select a crop", "section"))
+        note = label("The crop applies to the preview and PNG, JPEG and TIFF exports. Linear HDR exports keep the full image.", "muted")
         note.setWordWrap(True)
         layout.addWidget(note)
         self.canvas = CropCanvas(pixels, crop_rect)
@@ -460,21 +464,21 @@ class CropDialog(QDialog):
         self._selection_changed(crop_rect)
         layout.addWidget(self.selection_info)
         buttons = QHBoxLayout()
-        reset = QPushButton("Celý obraz")
+        reset = QPushButton("Full image")
         reset.clicked.connect(self.canvas.reset)
         buttons.addWidget(reset)
         buttons.addStretch()
-        cancel = QPushButton("Zrušiť")
+        cancel = QPushButton("Cancel")
         cancel.clicked.connect(self.reject)
         buttons.addWidget(cancel)
-        apply = QPushButton("Použiť výrez")
+        apply = QPushButton("Apply crop")
         apply.setObjectName("primary")
         apply.clicked.connect(self.accept)
         buttons.addWidget(apply)
         layout.addLayout(buttons)
 
     def _selection_changed(self, rect):
-        self.selection_info.setText(f"Šírka {rect[2]*100:.1f}% · výška {rect[3]*100:.1f}% pôvodného obrazu")
+        self.selection_info.setText(f"Width {rect[2]*100:.1f}% · height {rect[3]*100:.1f}% of the original image")
 
     def selected_rect(self):
         return self.canvas.crop_rect
@@ -529,7 +533,7 @@ class ManualAlignmentDialog(QDialog):
     """One reusable editor and a downsampled overlay for any source frame."""
     def __init__(self, corrections, reports, parent=None, alignment=None, frames=None):
         super().__init__(parent)
-        self.setWindowTitle("Doladenie zarovnania")
+        self.setWindowTitle("Fine-tune alignment")
         self.setMinimumWidth(690)
         self._alignment = alignment
         self._frames = frames or []
@@ -546,17 +550,17 @@ class ManualAlignmentDialog(QDialog):
         body = QVBoxLayout(self)
         body.setContentsMargins(18, 16, 18, 16)
         body.setSpacing(12)
-        body.addWidget(label("Jemné doladenie diskov", "section"))
-        note = label("Vyberte snímku a dolaďte ju voči pevnej referencii. Korekcie sú relatívne k automatickému zarovnaniu.", "muted")
+        body.addWidget(label("Fine-tune the lunar disks", "section"))
+        note = label("Select an image and adjust it against the fixed reference. Corrections are relative to the automatic alignment.", "muted")
         note.setWordWrap(True)
         body.addWidget(note)
         preview_row = QHBoxLayout()
-        preview_row.addWidget(label("UPRAVOVANÁ EXPOZÍCIA", "eyebrow"))
+        preview_row.addWidget(label("EXPOSURE TO ADJUST", "eyebrow"))
         self.overlay_selector = QComboBox()
         self.overlay_selector.setMinimumWidth(300)
         for index in range(count):
             if index != self.reference_index:
-                name = self._frames[index].name if self._frames else f"Snímka {index+1}"
+                name = self._frames[index].name if self._frames else f"Image {index+1}"
                 self.overlay_selector.addItem(f"{index+1:02d} · {name}", index)
         preview_row.addWidget(self.overlay_selector, 1)
         body.addLayout(preview_row)
@@ -565,17 +569,17 @@ class ManualAlignmentDialog(QDialog):
         self.overlay.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.overlay.setStyleSheet("background:#080d10; border:1px solid #33464a; border-radius:6px;")
         body.addWidget(self.overlay, 0, Qt.AlignmentFlag.AlignHCenter)
-        legend = label("Červená = referencia · tyrkysová = vybraná expozícia · neutrálne hrany = zhoda.\nJas je normalizovaný; rozdielna expozícia alebo prepálené detaily môžu meniť odtieň.", "muted")
+        legend = label("Red = reference · cyan = selected exposure · neutral edges = alignment.\nBrightness is normalized; exposure differences or clipped detail can affect the color.", "muted")
         legend.setStyleSheet("font-size:10px; color:#92a7af;")
         legend.setWordWrap(True)
         body.addWidget(legend)
         self.controls = {}
         self.values = {}
         grid = QGridLayout()
-        specs = [("dx", "Posun X · px", -100000, 100000, 0.25, 2),
-                 ("dy", "Posun Y · px", -100000, 100000, 0.25, 2),
-                 ("rotation", "Rotácia · °", -180, 180, 0.05, 3),
-                 ("scale", "Mierka", 0.01, 100, 0.001, 4)]
+        specs = [("dx", "X shift · px", -100000, 100000, 0.25, 2),
+                 ("dy", "Y shift · px", -100000, 100000, 0.25, 2),
+                 ("rotation", "Rotation · °", -180, 180, 0.05, 3),
+                 ("scale", "Scale", 0.01, 100, 0.001, 4)]
         for col, (key, title, low, high, step, decimals) in enumerate(specs):
             grid.addWidget(label(title, "muted"), 0, col)
             control = QDoubleSpinBox()
@@ -593,14 +597,14 @@ class ManualAlignmentDialog(QDialog):
         self.diagnostic.setStyleSheet("font-size:10px; color:#92a7af;")
         body.addWidget(self.diagnostic)
         buttons = QHBoxLayout()
-        reset = QPushButton("Vynulovať vybranú")
+        reset = QPushButton("Reset selected")
         reset.clicked.connect(self.reset)
         buttons.addWidget(reset)
         buttons.addStretch()
-        cancel = QPushButton("Zrušiť")
+        cancel = QPushButton("Cancel")
         cancel.clicked.connect(self.reject)
         buttons.addWidget(cancel)
-        apply = QPushButton("Použiť a prepočítať HDR")
+        apply = QPushButton("Apply and rebuild HDR")
         apply.setObjectName("primary")
         apply.clicked.connect(self.accept)
         buttons.addWidget(apply)
@@ -645,9 +649,9 @@ class ManualAlignmentDialog(QDialog):
             control.blockSignals(False)
         self.values = {index: self.controls}
         report = self._reports[index] if index < len(self._reports) else {}
-        text = f"{report.get('method', 'Zarovnanie')} · zhoda {float(report.get('confidence', 0)):.0%} · {report.get('inliers', 0)} bodov"
+        text = f"{report.get('method', 'Alignment')} · confidence {float(report.get('confidence', 0)):.0%} · {report.get('inliers', 0)} points"
         if "residual_px" in report:
-            text += f" · odchýlka {report['residual_px']:.2f} px"
+            text += f" · residual {report['residual_px']:.2f} px"
         if report.get("warning"):
             text += "\n" + report["warning"]
         self.diagnostic.setText(text)
@@ -697,8 +701,16 @@ class ManualAlignmentDialog(QDialog):
 
 
 class MainWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, *, settings=None, show_onboarding=True):
         super().__init__()
+        self._settings = settings if settings is not None else QSettings("LunarHDR", "LunarHDRStudio")
+        self._show_onboarding = bool(show_onboarding)
+        self._onboarding_started = False
+        self._help_dialog = None
+        self._onboarding_timer = QTimer(self)
+        self._onboarding_timer.setSingleShot(True)
+        self._onboarding_timer.setInterval(250)
+        self._onboarding_timer.timeout.connect(self._show_first_run_help)
         self.setWindowTitle("Lunar HDR Studio")
         self.resize(1480, 960)
         self.setMinimumSize(1160, 780)
@@ -727,7 +739,42 @@ class MainWindow(QMainWindow):
         self._build()
         QTimer.singleShot(80, self.load_demo)
 
+    def showEvent(self, event):
+        super().showEvent(event)
+        if not self._onboarding_started:
+            self._onboarding_started = True
+            if self._show_onboarding and not self._settings.value("onboarding/seen_v1", False, type=bool):
+                self._onboarding_timer.start()
+
+    def _show_first_run_help(self):
+        if self.isVisible() and not self._settings.value("onboarding/seen_v1", False, type=bool):
+            self.show_help("quick-start")
+
+    def show_help(self, topic="quick-start"):
+        """Keep a single modeless guide available, including while processing."""
+        self._onboarding_timer.stop()
+        if self._help_dialog is None:
+            self._help_dialog = HelpDialog(self, initial_topic=topic)
+            self._help_dialog.finished.connect(self._help_closed)
+        else:
+            self._help_dialog.select_topic(topic)
+        self._help_dialog.show()
+        self._help_dialog.raise_()
+        self._help_dialog.activateWindow()
+
+    def _help_closed(self, _result):
+        self._settings.setValue("onboarding/seen_v1", True)
+        self._settings.sync()
+
     def _build(self):
+        self.help_menu = self.menuBar().addMenu("&Help")
+        self.help_action = QAction("Getting started", self)
+        self.help_action.setShortcut(QKeySequence("F1"))
+        self.help_action.triggered.connect(lambda checked=False: self.show_help("quick-start"))
+        self.help_menu.addAction(self.help_action)
+        self.user_guide_action = QAction("User guide", self)
+        self.user_guide_action.triggered.connect(lambda checked=False: self.show_help("import"))
+        self.help_menu.addAction(self.user_guide_action)
         root = QWidget()
         self.setCentralWidget(root)
         outer = QVBoxLayout(root)
@@ -749,16 +796,23 @@ class MainWindow(QMainWindow):
         brand.addWidget(label("HDR STUDIO  /  LUNAR IMAGING", "eyebrow"))
         head.addLayout(brand)
         head.addSpacing(22)
-        divider = label("Viac expozícií. Všetky detaily.", "muted")
+        divider = label("Multiple exposures. Every detail.", "muted")
         head.addWidget(divider)
         head.addStretch()
-        self.demo_button = QPushButton("Otvoriť ukážku")
+        self.demo_button = QPushButton("Open demo")
         self.demo_button.setObjectName("quiet")
         self.demo_button.clicked.connect(self.load_demo)
         head.addWidget(self.demo_button)
-        self.load_button = QPushButton("＋  Pridať expozície")
+        self.load_button = QPushButton("＋  Add exposures")
         self.load_button.clicked.connect(self.pick_frames)
         head.addWidget(self.load_button)
+        self.help_button = QToolButton()
+        self.help_button.setText("?")
+        self.help_button.setAccessibleName("Help and getting started")
+        self.help_button.setToolTip("Help and getting started (F1)")
+        self.help_button.setFixedSize(34, 34)
+        self.help_button.clicked.connect(lambda checked=False: self.show_help("quick-start"))
+        head.addWidget(self.help_button)
         outer.addWidget(header)
         workspace = QHBoxLayout()
         workspace.setContentsMargins(20, 20, 20, 16)
@@ -778,10 +832,10 @@ class MainWindow(QMainWindow):
         self.progress.setTextVisible(False)
         status_layout.addWidget(self.progress)
         row = QHBoxLayout()
-        self.status = label("Pripravené na vaše fotografie.", "muted")
+        self.status = label("Ready for your photos.", "muted")
         self.status.setWordWrap(True)
         row.addWidget(self.status, 1)
-        self.memory_note = label("LOKÁLNE SPRACOVANIE  ·  BEZ NAHRÁVANIA DO CLOUDU", "eyebrow")
+        self.memory_note = label("LOCAL PROCESSING  ·  NO CLOUD UPLOADS", "eyebrow")
         row.addWidget(self.memory_note)
         status_layout.addLayout(row)
         outer.addWidget(footer)
@@ -795,11 +849,11 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(12, 16, 12, 14)
         layout.setSpacing(11)
         row = QHBoxLayout()
-        row.addWidget(label("01   ZDROJOVÉ SNÍMKY", "eyebrow"), 1)
-        self.source_count = label("0 snímok", "muted")
+        row.addWidget(label("01   SOURCE IMAGES", "eyebrow"), 1)
+        self.source_count = label("0 images", "muted")
         row.addWidget(self.source_count)
         layout.addLayout(row)
-        desc = label("Dve alebo viac expozícií. Pridávajte podľa potreby.", "muted")
+        desc = label("Two or more exposures. Add as many as you need.", "muted")
         desc.setWordWrap(True)
         layout.addWidget(desc)
         self.cards = []
@@ -816,30 +870,30 @@ class MainWindow(QMainWindow):
         self.cards_layout.addStretch()
         self.cards_scroll.setWidget(card_content)
         layout.addWidget(self.cards_scroll, 1)
-        self.add_button = QPushButton("＋  Pridať súbory…")
+        self.add_button = QPushButton("＋  Add files…")
         self.add_button.setObjectName("quiet")
         self.add_button.clicked.connect(self.pick_frames)
         layout.addWidget(self.add_button)
-        layout.addWidget(label("REFERENČNÁ SNÍMKA", "eyebrow"))
+        layout.addWidget(label("REFERENCE IMAGE", "eyebrow"))
         self.reference_selector = QComboBox()
         self.reference_selector.currentIndexChanged.connect(self._reference_changed)
         layout.addWidget(self.reference_selector)
-        self.input_info = label("Pridajte aspoň dve snímky.", "muted")
+        self.input_info = label("Add at least two images.", "muted")
         self.input_info.setWordWrap(True)
         self.input_info.setStyleSheet("font-size:10px; color:#95aaa7;")
         layout.addWidget(self.input_info)
-        layout.addWidget(label("METÓDA SPOJENIA", "eyebrow"))
+        layout.addWidget(label("MERGE METHOD", "eyebrow"))
         self.mode = QComboBox()
-        self.mode.addItem("HDR · expozičné časy / EV", "radiance")
-        self.mode.addItem("Expozičná fúzia · bez kalibrácie", "fusion")
-        self.mode.setToolTip("HDR používa EV alebo EXPTIME z FITS. Fúzia kombinuje zobrazené expozície; neposkytuje lineárny HDR export.")
+        self.mode.addItem("HDR · exposure times / EV", "radiance")
+        self.mode.addItem("Exposure fusion · uncalibrated", "fusion")
+        self.mode.setToolTip("HDR uses EV values or FITS EXPTIME. Fusion combines displayed exposures and does not provide a linear HDR export.")
         self.mode.currentIndexChanged.connect(self._ev_changed)
         layout.addWidget(self.mode)
-        self.merge_button = QPushButton("Zarovnať a vytvoriť HDR  →")
+        self.merge_button = QPushButton("Align and build HDR  →")
         self.merge_button.setObjectName("primary")
         self.merge_button.clicked.connect(self.merge)
         layout.addWidget(self.merge_button)
-        file_note = label("FITS / FITS.gz · PNG · JPEG · TIFF\nSúbor možno pretiahnuť na kartu na výmenu.", "muted")
+        file_note = label("FITS / FITS.gz · PNG · JPEG · TIFF\nDrop a file onto a card to replace its image.", "muted")
         file_note.setStyleSheet("font-size:10px; color:#81959b;")
         file_note.setWordWrap(True)
         layout.addWidget(file_note)
@@ -854,13 +908,13 @@ class MainWindow(QMainWindow):
         row = QHBoxLayout()
         heading = QVBoxLayout()
         heading.setSpacing(5)
-        heading.addWidget(label("02   KOMPOZÍCIA", "eyebrow"))
-        self.preview_title = label("Náhľad Mesiaca", "section")
+        heading.addWidget(label("02   COMPOSITION", "eyebrow"))
+        self.preview_title = label("Moon preview", "section")
         self.preview_title.setStyleSheet("font-size:18px; font-weight:500;")
         heading.addWidget(self.preview_title)
         row.addLayout(heading)
         row.addStretch()
-        self.demo_badge = label("UKÁŽKA · SYNTETICKÉ EXPOZÍCIE", "badge")
+        self.demo_badge = label("DEMO · SYNTHETIC EXPOSURES", "badge")
         self.demo_badge.setVisible(False)
         row.addWidget(self.demo_badge)
         layout.addLayout(row)
@@ -875,9 +929,9 @@ class MainWindow(QMainWindow):
         toolbar = QHBoxLayout(tools)
         toolbar.setContentsMargins(12, 9, 12, 9)
         self.compare_button = QToolButton()
-        self.compare_button.setText("◐  Pred / po")
+        self.compare_button.setText("◐  Before / after")
         self.compare_button.setCheckable(True)
-        self.compare_button.setToolTip("Potiahnite deliacu čiaru: vľavo vybraná referencia, vpravo výsledok. Kolieskom priblížite, ťahaním posuniete obrázok.")
+        self.compare_button.setToolTip("Drag the divider: selected reference on the left, result on the right. Scroll to zoom; drag the image to pan.")
         self.compare_button.toggled.connect(self.set_compare)
         toolbar.addWidget(self.compare_button)
         toolbar.addStretch()
@@ -886,7 +940,7 @@ class MainWindow(QMainWindow):
         zoom_out.clicked.connect(lambda: self.canvas.zoom_by(1/1.2))
         toolbar.addWidget(zoom_out)
         self.fit_button = QToolButton()
-        self.fit_button.setText("Prispôsobiť")
+        self.fit_button.setText("Fit")
         self.fit_button.clicked.connect(self.canvas.fit)
         self.canvas.zoomChanged.connect(self.fit_button.setText)
         toolbar.addWidget(self.fit_button)
@@ -900,7 +954,7 @@ class MainWindow(QMainWindow):
         self.image_info = label("—", "muted")
         self.image_info.setStyleSheet("font-size: 10px; color: #81979f;")
         details.addWidget(self.image_info, 1)
-        self.edit_state = label("ŽIVÝ NÁHĽAD", "eyebrow")
+        self.edit_state = label("LIVE PREVIEW", "eyebrow")
         details.addWidget(self.edit_state)
         layout.addLayout(details)
         alignment = QFrame()
@@ -909,13 +963,13 @@ class MainWindow(QMainWindow):
         align_layout.setContentsMargins(14, 12, 14, 12)
         align_layout.setSpacing(7)
         row = QHBoxLayout()
-        row.addWidget(label("ZAROVNANIE DISKOV", "eyebrow"), 1)
-        self.manual_button = QPushButton("Doladiť…")
+        row.addWidget(label("DISK ALIGNMENT", "eyebrow"), 1)
+        self.manual_button = QPushButton("Fine-tune…")
         self.manual_button.setObjectName("quiet")
         self.manual_button.clicked.connect(self.manual_alignment)
         row.addWidget(self.manual_button)
         align_layout.addLayout(row)
-        self.alignment_info = label("Detekcia disku → zhodné detaily povrchu → subpixelové zarovnanie", "muted")
+        self.alignment_info = label("Disk detection → surface feature matching → subpixel alignment", "muted")
         self.alignment_info.setWordWrap(True)
         self.alignment_info.setMinimumHeight(30)
         self.alignment_info.setStyleSheet("font-size: 11px; color: #90a5ad;")
@@ -931,7 +985,7 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(16, 16, 16, 14)
         layout.setSpacing(12)
         row = QHBoxLayout()
-        row.addWidget(label("03   VYVOLANIE", "eyebrow"), 1)
+        row.addWidget(label("03   DEVELOP", "eyebrow"), 1)
         reset = QPushButton("Reset")
         reset.setObjectName("quiet")
         reset.clicked.connect(self.reset_settings)
@@ -948,7 +1002,7 @@ class MainWindow(QMainWindow):
             self.preset_buttons[name] = button
             preset_grid.addWidget(button, index//2, index%2)
         layout.addLayout(preset_grid)
-        note = label("Mineral Moon zvýrazní jemné farebné rozdiely povrchu.", "muted")
+        note = label("Mineral Moon brings out subtle surface color differences.", "muted")
         self.mineral_note = note
         note.setWordWrap(True)
         note.setStyleSheet("font-size:10px; color:#83989f;")
@@ -964,65 +1018,65 @@ class MainWindow(QMainWindow):
         sliders.setContentsMargins(0, 2, 6, 3)
         sliders.setSpacing(11)
         self.adjustments = {}
-        specs = [("exposure", "Expozícia", -300, 300, 0, 100, " EV"),
-                 ("contrast", "Kontrast", -100, 100, 0, 1, ""),
-                 ("highlights", "Svetlá", -100, 100, 0, 1, ""),
-                 ("shadows", "Tiene", -100, 100, 0, 1, ""),
-                 ("white_balance", "Neutralizácia farieb", 0, 100, 0, 1, "%"),
-                 ("temperature", "Teplota", -100, 100, 0, 1, ""),
-                 ("saturation", "Sýtosť", 0, 200, 100, 1, "%"),
-                 ("mineral", "Minerálne farby", 0, 100, 0, 1, ""),
-                 ("clarity", "Lokálny kontrast", 0, 100, 0, 1, ""),
-                 ("sharpness", "Ostrosť", 0, 100, 0, 1, ""),
-                 ("denoise", "Redukcia šumu", 0, 100, 0, 1, "")]
+        specs = [("exposure", "Exposure", -300, 300, 0, 100, " EV"),
+                 ("contrast", "Contrast", -100, 100, 0, 1, ""),
+                 ("highlights", "Highlights", -100, 100, 0, 1, ""),
+                 ("shadows", "Shadows", -100, 100, 0, 1, ""),
+                 ("white_balance", "Color neutralization", 0, 100, 0, 1, "%"),
+                 ("temperature", "Temperature", -100, 100, 0, 1, ""),
+                 ("saturation", "Saturation", 0, 200, 100, 1, "%"),
+                 ("mineral", "Mineral colors", 0, 100, 0, 1, ""),
+                 ("clarity", "Clarity", 0, 100, 0, 1, ""),
+                 ("sharpness", "Sharpness", 0, 100, 0, 1, ""),
+                 ("denoise", "Noise reduction", 0, 100, 0, 1, "")]
         for key, title, low, high, value, factor, suffix in specs:
             widget = Adjustment(title, low, high, value, factor, suffix)
             if key == "white_balance":
-                widget.setToolTip("Vyrovná priemernú farbu mesačného disku podľa predpokladu neutrálnej sivej. Kreatívna úprava, nie meranie chemického zloženia.")
+                widget.setToolTip("Balances the average lunar disk color using a neutral-gray assumption. This is a creative adjustment, not a measurement of chemical composition.")
             widget.changed.connect(self.settings_changed)
             self.adjustments[key] = widget
             sliders.addWidget(widget)
         sliders.addSpacing(6)
-        sliders.addWidget(label("DOKONČENIE", "eyebrow"))
-        sliders.addWidget(label("Hviezdy na pozadí", "muted"))
+        sliders.addWidget(label("FINISHING", "eyebrow"))
+        sliders.addWidget(label("Background stars", "muted"))
         self.background_mode = QComboBox()
-        self.background_mode.addItem("Pôvodné pozadie", "original")
-        self.background_mode.addItem("Potlačiť hviezdy", "remove")
-        self.background_mode.addItem("Pridať hviezdy · efekt", "add")
-        self.background_mode.setToolTip("Pridané hviezdy sú syntetický vizuálny efekt; nepredstavujú astronomické meranie.")
+        self.background_mode.addItem("Original background", "original")
+        self.background_mode.addItem("Suppress stars", "remove")
+        self.background_mode.addItem("Add stars · effect", "add")
+        self.background_mode.setToolTip("Added stars are a synthetic visual effect, not an astronomical measurement.")
         self.background_mode.currentIndexChanged.connect(self.finishing_changed)
         sliders.addWidget(self.background_mode)
-        self.signature_checkbox = QCheckBox("Pridať podpis")
+        self.signature_checkbox = QCheckBox("Add signature")
         self.signature_checkbox.toggled.connect(self.finishing_changed)
         sliders.addWidget(self.signature_checkbox)
         self.signature_input = QLineEdit("Lunar HDR")
-        self.signature_input.setPlaceholderText("Váš podpis")
+        self.signature_input.setPlaceholderText("Your signature")
         self.signature_input.setMaxLength(100)
         self.signature_input.setEnabled(False)
         self.signature_input.textChanged.connect(self.finishing_changed)
         sliders.addWidget(self.signature_input)
         crop_row = QHBoxLayout()
-        self.crop_button = QPushButton("Orezať…")
+        self.crop_button = QPushButton("Crop…")
         self.crop_button.setObjectName("quiet")
         self.crop_button.clicked.connect(self.edit_crop)
         crop_row.addWidget(self.crop_button, 1)
-        self.crop_reset_button = QPushButton("Zrušiť výrez")
+        self.crop_reset_button = QPushButton("Reset crop")
         self.crop_reset_button.setObjectName("quiet")
         self.crop_reset_button.clicked.connect(self.reset_crop)
         crop_row.addWidget(self.crop_reset_button)
         sliders.addLayout(crop_row)
-        self.crop_info = label("Celý obraz", "muted")
+        self.crop_info = label("Full image", "muted")
         self.crop_info.setStyleSheet("font-size:10px; color:#81979f;")
         sliders.addWidget(self.crop_info)
         sliders.addStretch()
         scroll.setWidget(controls)
         layout.addWidget(scroll, 1)
-        self.export_button = QPushButton("Exportovať obrázok  ↗")
+        self.export_button = QPushButton("Export image  ↗")
         self.export_button.setObjectName("primary")
         self.export_button.clicked.connect(self.export_image)
-        self.export_button.setToolTip("PNG, JPEG a TIFF obsahujú úpravy, pozadie, výrez a podpis. HDR ukladá plný lineárny obraz bez týchto úprav.")
+        self.export_button.setToolTip("PNG, JPEG and TIFF include adjustments, background effects, crop and signature. HDR saves the full linear image without these edits.")
         layout.addWidget(self.export_button)
-        export_note = label("PNG / JPEG / TIFF: upravený výrez\nHDR: plný lineárny obraz bez úprav", "muted")
+        export_note = label("PNG / JPEG / TIFF: edited and cropped\nHDR: full linear image, unedited", "muted")
         export_note.setStyleSheet("font-size:10px; color:#81979f;")
         export_note.setWordWrap(True)
         layout.addWidget(export_note)
@@ -1064,7 +1118,7 @@ class MainWindow(QMainWindow):
         self._preview_timer.start()
 
     def _update_crop_info(self):
-        self.crop_info.setText(f"Výrez {self.crop_rect[2]*100:.1f}% × {self.crop_rect[3]*100:.1f}%" if self.crop_enabled else "Celý obraz")
+        self.crop_info.setText(f"Crop {self.crop_rect[2]*100:.1f}% × {self.crop_rect[3]*100:.1f}%" if self.crop_enabled else "Full image")
         self.crop_reset_button.setEnabled(self.crop_enabled and not self._busy)
 
     def settings_changed(self):
@@ -1100,7 +1154,7 @@ class MainWindow(QMainWindow):
                 before = finish_image(before, dict(crop_enabled=True, crop_rect=tuple(self.crop_rect)))
             self.canvas.set_images(self._preview_after, before)
         except Exception as exc:
-            self.status.setText(f"Náhľad sa nepodarilo aktualizovať: {exc}")
+            self.status.setText(f"Could not update the preview: {exc}")
 
     def set_compare(self, enabled):
         self.canvas.compare = enabled
@@ -1123,12 +1177,12 @@ class MainWindow(QMainWindow):
         self._update_crop_info()
         for card in self.cards:
             card.setEnabled(not self._busy)
-        self.source_count.setText(f"{len(self.frames)} snímok")
+        self.source_count.setText(f"{len(self.frames)} images")
         mono = self._all_monochrome()
         for key in ("temperature", "white_balance", "saturation", "mineral"):
             self.adjustments[key].setEnabled(not mono)
         self.preset_buttons["Mineral Moon"].setEnabled(not mono)
-        self.mineral_note.setText("Monochromatické dáta: farebné úpravy sú vypnuté; minerálne farby v snímkach nie sú." if mono else "Mineral Moon zvýrazní existujúce jemné farebné rozdiely povrchu.")
+        self.mineral_note.setText("Monochrome data: color adjustments are disabled because these images contain no mineral color information." if mono else "Mineral Moon enhances existing subtle surface color differences.")
 
     def _progress(self, value, message):
         self.progress.setValue(max(0, min(100, value)))
@@ -1157,10 +1211,10 @@ class MainWindow(QMainWindow):
             self._task_error(f"{exc}\n\n{traceback.format_exc()}")
 
     def _task_error(self, details):
-        self.status.setText("Spracovanie sa nepodarilo. Vstupné súbory zostali nezmenené.")
+        self.status.setText("Processing failed. Your source files have not been changed.")
         box = QMessageBox(self)
         box.setIcon(QMessageBox.Icon.Warning)
-        box.setWindowTitle("Lunar HDR · chyba spracovania")
+        box.setWindowTitle("Lunar HDR · processing error")
         box.setText(details.split("\n\n", 1)[0])
         box.setDetailedText(details)
         box.exec()
@@ -1176,14 +1230,14 @@ class MainWindow(QMainWindow):
     def pick_frame(self, index):
         if self._busy:
             return
-        path, _ = QFileDialog.getOpenFileName(self, "Vymeniť expozíciu Mesiaca", "", IMAGE_FILTER)
+        path, _ = QFileDialog.getOpenFileName(self, "Replace a lunar exposure", "", IMAGE_FILTER)
         if path:
             self.load_frame(index, path)
 
     def pick_frames(self):
         if self._busy:
             return
-        paths, _ = QFileDialog.getOpenFileNames(self, "Pridať expozície Mesiaca", "", IMAGE_FILTER)
+        paths, _ = QFileDialog.getOpenFileNames(self, "Add lunar exposures", "", IMAGE_FILTER)
         if paths:
             self.load_frames(paths, append=True)
 
@@ -1204,14 +1258,14 @@ class MainWindow(QMainWindow):
         def job(progress):
             loaded = []
             for index, path in enumerate(paths):
-                progress(5+int(index*90/len(paths)), f"Načítavam {index+1}/{len(paths)} · {Path(path).name}…")
+                progress(5+int(index*90/len(paths)), f"Loading {index+1}/{len(paths)} · {Path(path).name}…")
                 loaded.append(engine.read_image(path))
-            progress(100, "Všetky vybrané snímky sú načítané.")
+            progress(100, "All selected images are loaded.")
             return loaded
         def complete(loaded):
             self._apply_frames(old_frames+loaded, old_evs+[0.0]*len(loaded), old_reference, auto_metadata=use_metadata)
             self.status.setText(self._import_summary())
-        self._start_task(job, "Načítavam expozície…", complete)
+        self._start_task(job, "Loading exposures…", complete)
 
     def load_frame(self, index, path):
         if self._busy:
@@ -1222,7 +1276,7 @@ class MainWindow(QMainWindow):
         old_reference = self.reference_index if replace_existing else 0
         use_metadata = not replace_existing or self._ev_from_metadata
         def job(progress):
-            progress(10, "Načítavam snímku…")
+            progress(10, "Loading image…")
             return engine.read_image(str(path))
         def complete(frame):
             if replace_existing:
@@ -1232,7 +1286,7 @@ class MainWindow(QMainWindow):
             else:
                 self._apply_frames([frame], [0.0], 0)
             self.status.setText(self._import_summary())
-        self._start_task(job, "Načítavam snímku…", complete)
+        self._start_task(job, "Loading image…", complete)
 
     def _metadata_evs(self, reference_index):
         times = [getattr(frame, "exposure_seconds", None) for frame in self.frames]
@@ -1249,7 +1303,7 @@ class MainWindow(QMainWindow):
         self.reference_selector.blockSignals(True)
         self.reference_selector.clear()
         for index, (frame, ev) in enumerate(zip(self.frames, evs)):
-            title = "Referencia" if index == self.reference_index else "Expozícia"
+            title = "Reference" if index == self.reference_index else "Exposure"
             card = ExposureCard(index, title, "", ev)
             card.set_frame(frame)
             card.requested.connect(self.pick_frame)
@@ -1293,7 +1347,7 @@ class MainWindow(QMainWindow):
             offset = evs[reference]
             evs = [ev-offset for ev in evs]
         self._apply_frames(frames, evs, reference, synthetic=self._synthetic, auto_metadata=self._ev_from_metadata)
-        self.status.setText(f"Snímka odobratá. Zostáva {len(frames)} expozícií." if len(frames)>=2 else "Pridajte aspoň dve snímky pre spojenie.")
+        self.status.setText(f"Image removed. {len(frames)} exposures remaining." if len(frames)>=2 else "Add at least two images to merge.")
 
     def _reference_changed(self, position):
         if self._busy or not 0 <= position < len(self.frames) or position == self.reference_index:
@@ -1302,7 +1356,7 @@ class MainWindow(QMainWindow):
         offset = evs[position]
         evs = [ev-offset for ev in evs]
         self._apply_frames(self.frames, evs, position, synthetic=self._synthetic, auto_metadata=self._ev_from_metadata)
-        self.status.setText("Referencia zmenená. EV sú prepočítané voči nej; kompozíciu vytvorte znova.")
+        self.status.setText("Reference changed. EV values are now relative to it; rebuild the composition.")
 
     def _exposure_metadata_warning(self):
         times = [getattr(frame, "exposure_seconds", None) for frame in self.frames]
@@ -1312,29 +1366,29 @@ class MainWindow(QMainWindow):
         ratio = max(times)/min(times)
         if ratio <= 1000:
             return ""
-        return f"Rozsah EXPTIME {ratio:.0f}×: overte normalizáciu stacku alebo zvoľte fúziu. EV zostali zachované."
+        return f"EXPTIME range is {ratio:.0f}×: verify stack normalization or choose fusion. EV values have been preserved."
 
     def _refresh_input_info(self):
         if not self.frames:
-            self.input_info.setText("Pridajte aspoň dve snímky.")
+            self.input_info.setText("Add at least two images.")
             self.input_info.setToolTip("")
             return
         if self._synthetic:
-            text = "Ukážka: syntetické expozície, EV voči referencii."
+            text = "Demo: synthetic exposures with EV values relative to the reference."
         elif self._ev_from_metadata:
-            text = "EV z EXPTIME / EXPOSURE voči referencii."
+            text = "EV values from EXPTIME / EXPOSURE, relative to the reference."
         else:
-            text = "EV sú manuálne. Nové snímky majú 0; nastavte skutočné rozdiely expozícií."
+            text = "EV values are manual. New images start at 0; enter the actual exposure differences."
         mono_count = sum(bool((getattr(frame, "metadata", {}) or {}).get("monochrome")) for frame in self.frames)
         if mono_count:
-            text += f"\nMonochromatické snímky: {mono_count}."
+            text += f"\nMonochrome images: {mono_count}."
         warnings = [f"{frame.name}: {warning}" for frame in self.frames for warning in getattr(frame, "warnings", [])]
         exposure_warning = self._exposure_metadata_warning()
         if exposure_warning:
             text += "\n" + exposure_warning
             warnings.insert(0, exposure_warning)
         if warnings:
-            text += f"\nUpozornenia pri importe: {len(warnings)} (detail po podržaní kurzora)."
+            text += f"\nImport warnings: {len(warnings)} (hover for details)."
         self.input_info.setText(text)
         self.input_info.setToolTip("\n".join(warnings) or text)
 
@@ -1343,12 +1397,12 @@ class MainWindow(QMainWindow):
         exposure_warning = self._exposure_metadata_warning()
         if exposure_warning:
             warnings.insert(0, exposure_warning)
-        base = f"Načítaných {len(self.frames)} snímok. "
-        base += "EV načítané z expozičných časov." if self._ev_from_metadata else "Skontrolujte manuálne EV; nuly neznamenajú zistenú expozíciu."
+        base = f"Loaded {len(self.frames)} images. "
+        base += "EV values loaded from exposure times." if self._ev_from_metadata else "Check the manual EV values; zero does not mean the exposure was detected."
         self.status.setToolTip("\n\n".join(str(w) for w in warnings))
         if exposure_warning:
             return base + " " + exposure_warning
-        return base + (f" · {len(warnings)} upozornení (podrobnosti po podržaní kurzora)." if warnings else "")
+        return base + (f" · {len(warnings)} warnings (hover for details)." if warnings else "")
 
     def _card_ev_changed(self):
         self._ev_from_metadata = False
@@ -1361,8 +1415,8 @@ class MainWindow(QMainWindow):
         self.composite = None
         self._merge_dirty = True
         self.corrections = [{} for _ in self.frames]
-        self.alignment_info.setText("Pripravené na automatické zarovnanie diskov a detailov povrchu.")
-        self.preview_title.setText("Referenčná snímka")
+        self.alignment_info.setText("Ready to align lunar disks and surface details automatically.")
+        self.preview_title.setText("Reference image")
 
     def _show_source(self):
         if not self.frames:
@@ -1379,14 +1433,14 @@ class MainWindow(QMainWindow):
         height, width = frame.pixels.shape[:2]
         metadata = getattr(frame, "metadata", {}) or {}
         kind = "FITS · mono" if metadata.get("monochrome") else "RGB"
-        self.image_info.setText(f"{width:,} × {height:,} px · referencia {self.reference_index+1:02d} · {kind}".replace(",", " "))
+        self.image_info.setText(f"{width:,} × {height:,} px · reference {self.reference_index+1:02d} · {kind}".replace(",", " "))
 
     def load_demo(self):
         path = Path(__file__).resolve().parent / "assets" / "demo_reference.png"
         if self._busy or not path.exists():
             return
         def job(progress):
-            progress(10, "Pripravujem syntetickú ukážku…")
+            progress(10, "Preparing the synthetic demo…")
             source = engine.read_image(str(path)).pixels
             h, w = source.shape[:2]
             linear = np.where(source <= 0.04045, source/12.92, ((source+0.055)/1.055)**2.4)
@@ -1400,20 +1454,20 @@ class MainWindow(QMainWindow):
                     pixels = cv2.warpAffine(pixels, matrix, (w, h), flags=cv2.INTER_LINEAR,
                                             borderMode=cv2.BORDER_CONSTANT)
                 frames.append(engine.ImageFrame(path=f"demo://exposure-{ev:+d}",
-                                                name=f"Ukážka {ev:+d} EV", pixels=pixels.astype(np.float32), bit_depth=8))
-            progress(100, "Ukážka je pripravená.")
+                                                name=f"Demo {ev:+d} EV", pixels=pixels.astype(np.float32), bit_depth=8))
+            progress(100, "The demo is ready.")
             return frames
         def complete(frames):
             self._apply_frames(frames, [-2.0, 0.0, 2.0], 1, synthetic=True, auto_metadata=False)
-            self.preview_title.setText("Mineral Moon · ukážka")
-            self.status.setText("Ukážka: tri syntetické expozície z referencie. Pridanie vlastných súborov ukážku nahradí.")
-        self._start_task(job, "Načítavam ukážku…", complete)
+            self.preview_title.setText("Mineral Moon · demo")
+            self.status.setText("Demo: three synthetic exposures from a reference image. Adding your own files replaces the demo.")
+        self._start_task(job, "Loading demo…", complete)
 
     def _ev_changed(self, *args):
         if self.composite is not None:
             self._merge_dirty = True
             self._refresh_actions()
-            self.status.setText("EV alebo metóda sa zmenili. Kliknite na Zarovnať a vytvoriť HDR pre nový výsledok.")
+            self.status.setText("EV values or the merge method changed. Click Align and build HDR for a new result.")
 
     def merge(self):
         if self._busy or len(self.frames) < 2:
@@ -1433,16 +1487,16 @@ class MainWindow(QMainWindow):
             self.alignment = self.automatic_alignment
             self.corrections = [{} for _ in self.frames]
             self._show_composite()
-        self._start_task(job, "Hľadám zhodné disky a detaily Mesiaca…", complete)
+        self._start_task(job, "Matching lunar disks and surface details…", complete)
 
     def _show_composite(self):
         self._merge_dirty = False
         self._preview_base = preview_size(self.composite.base)
         self._preview_before = preview_size(self.frames[self.reference_index].pixels)
         self.update_preview()
-        self.preview_title.setText("Lunar HDR" if self.composite.mode == "radiance" else "Lunar · expozičná fúzia")
+        self.preview_title.setText("Lunar HDR" if self.composite.mode == "radiance" else "Lunar · exposure fusion")
         h, w = self.composite.base.shape[:2]
-        self.image_info.setText(f"{w:,} × {h:,} px  ·  {len(self.frames)} expozícií  ·  {'HDR radiancia' if self.composite.linear is not None else 'Expozičná fúzia'}".replace(",", " "))
+        self.image_info.setText(f"{w:,} × {h:,} px  ·  {len(self.frames)} exposures  ·  {'HDR radiance' if self.composite.linear is not None else 'Exposure fusion'}".replace(",", " "))
         lines = []
         for index in range(len(self.frames)):
             if index == self.reference_index:
@@ -1453,22 +1507,22 @@ class MainWindow(QMainWindow):
             name = f"{index+1:02d}"
             report = self.alignment.reports[index]
             confidence = float(report.get("confidence", 0))
-            verification = "overiť ručne" if report.get("warning") else f"zhoda {confidence:.0%}"
+            verification = "check manually" if report.get("warning") else f"confidence {confidence:.0%}"
             lines.append(f"{name}: Δx {matrix[0, 2]:+.1f} px · Δy {matrix[1, 2]:+.1f} px · {rotation:+.2f}° · {scale:.4f}× · {verification}")
         visible = lines[:3]
         if len(lines) > 3:
-            visible.append(f"+ {len(lines)-3} ďalších snímok · detaily v Doladiť…")
+            visible.append(f"+ {len(lines)-3} more images · details in Fine-tune…")
         self.alignment_info.setText("\n".join(visible))
         reports = getattr(self.alignment, "reports", [])
         self.alignment_info.setToolTip("\n".join(
-            f"{report.get('name', '')}: {report.get('method', '')} · {report.get('inliers', 0)} bodov\n{report.get('warning', '')}"
+            f"{report.get('name', '')}: {report.get('method', '')} · {report.get('inliers', 0)} points\n{report.get('warning', '')}"
             for report in reports))
         warnings = list(getattr(self.composite, "warnings", []))
         exposure_warning = self._exposure_metadata_warning()
         if exposure_warning:
             warnings.insert(0, exposure_warning)
-        self.status.setText("HDR je pripravené. Upravte vzhľad a exportujte." if not warnings else
-                            f"Kompozícia je pripravená · {len(warnings)} upozornení. Podržte kurzor nad touto správou pre podrobnosti.")
+        self.status.setText("HDR is ready. Adjust the look and export." if not warnings else
+                            f"Composition is ready · {len(warnings)} warnings. Hover over this message for details.")
         self.status.setToolTip("\n\n".join(str(w) for w in warnings))
         self.progress.setValue(100)
 
@@ -1485,7 +1539,7 @@ class MainWindow(QMainWindow):
         evs = [card.ev.value() for card in self.cards]
         mode = self.mode.currentData()
         def job(progress):
-            progress(5, "Používam korekcie zarovnania…")
+            progress(5, "Applying alignment corrections…")
             adjusted = baseline
             for index in range(len(frames)):
                 correction = corrections[index]
@@ -1500,7 +1554,7 @@ class MainWindow(QMainWindow):
             self.alignment, self.composite = result
             self.corrections = corrections
             self._show_composite()
-        self._start_task(job, "Prepočítavam kompozíciu…", complete)
+        self._start_task(job, "Rebuilding the composition…", complete)
 
     def export_image(self):
         if self._busy or self.composite is None or self._merge_dirty:
@@ -1511,7 +1565,7 @@ class MainWindow(QMainWindow):
         if directory is None or not directory.is_dir() or not os.access(directory, os.W_OK):
             directory = default_export_directory()
         path, selected_filter = QFileDialog.getSaveFileName(
-            self, "Exportovať Lunar HDR", str(directory / "Lunar-HDR.png"), filters,
+            self, "Export Lunar HDR", str(directory / "Lunar-HDR.png"), filters,
             EXPORT_FORMATS[0][0], options=QFileDialog.Option.DontUseNativeDialog)
         if not path:
             return
@@ -1521,39 +1575,42 @@ class MainWindow(QMainWindow):
                 destination = directory / destination
             path = resolve_export_path(str(destination), selected_filter)
         except (TypeError, ValueError, OSError) as exc:
-            self._task_error(f"Nepodarilo sa pripraviť cestu exportu: {exc}")
+            self._task_error(f"Could not prepare the export path: {exc}")
             return
         settings = self.settings()
         finishing = self.finishing_options()
         composite = self.composite
         if Path(path).suffix.lower() == ".hdr" and composite.linear is None:
-            QMessageBox.information(self, "Lineárne HDR nie je dostupné", "Expozičná fúzia nemá lineárnu radianciu. Zvoľte PNG, JPEG alebo TIFF, alebo prepočítajte výsledok v režime HDR.")
+            QMessageBox.information(self, "Linear HDR is unavailable", "Exposure fusion has no linear radiance. Choose PNG, JPEG or TIFF, or rebuild the result in HDR mode.")
             return
         def job(progress):
-            progress(10, "Pripravujem export v plnom rozlíšení…")
+            progress(10, "Preparing a full-resolution export…")
             try:
                 if Path(path).suffix.lower() == ".hdr":
                     engine.write_image(path, composite.base, linear_hdr=composite.linear)
                 else:
                     pixels = finish_image(engine.adjust_image(composite.base, settings), finishing)
-                    progress(70, "Zapisujem obrázok…")
+                    progress(70, "Writing image…")
                     engine.write_image(path, pixels)
             except OSError as exc:
                 if exc.errno in (errno.EACCES, errno.EPERM, errno.EROFS):
                     raise OSError(exc.errno,
-                                  f"Do priečinka '{Path(path).parent}' sa nedá zapisovať. Pri exporte vyberte Obrázky alebo iný zapisovateľný priečinok.",
+                                  f"Cannot write to '{Path(path).parent}'. Choose Pictures or another writable folder when exporting.",
                                   path) from exc
                 raise
-            progress(100, "Export dokončený.")
+            progress(100, "Export complete.")
             return path
         def complete(saved):
             self._export_directory = Path(saved).parent
-            self.status.setText(f"Exportované: {saved}" + (" · plná lineárna radiancia bez úprav, výrezu a podpisu" if Path(saved).suffix.lower()==".hdr" else ""))
-        self._start_task(job, "Exportujem obrázok…", complete)
+            self.status.setText(f"Exported: {saved}" + (" · full linear radiance without adjustments, crop or signature" if Path(saved).suffix.lower()==".hdr" else ""))
+        self._start_task(job, "Exporting image…", complete)
 
     def closeEvent(self, event):
+        self._onboarding_timer.stop()
         if self._task is not None and self._task.isRunning():
-            QMessageBox.information(self, "Prebieha spracovanie", "Pred zatvorením počkajte na dokončenie aktuálneho spracovania.")
+            QMessageBox.information(self, "Processing in progress", "Wait for the current operation to finish before closing.")
             event.ignore()
             return
+        if self._help_dialog is not None:
+            self._help_dialog.close()
         super().closeEvent(event)

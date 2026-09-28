@@ -2,7 +2,7 @@
 
 [English](README.md)
 
-Lokálna desktopová aplikácia pre skladanie dvoch alebo viacerých expozícií Mesiaca a tvorbu vzhľadu **Mineral Moon**. Verzia **0.4.0** podporuje FITS, ľubovoľný počet expozícií, hviezdne pozadie, vlastný podpis a orez obrázka. Fotografie sa nikam neposielajú. Rozhranie je v slovenčine.
+Lokálna desktopová aplikácia pre skladanie dvoch alebo viacerých expozícií Mesiaca a tvorbu vzhľadu **Mineral Moon**. Verzia **0.5.0** podporuje FITS, ľubovoľný počet expozícií, hviezdne pozadie, vlastný podpis a orez obrázka. Fotografie sa nikam neposielajú. Rozhranie aj vstavaná nápoveda sú v angličtine.
 
 ![Mesiac z troch expozícií DWARF Mini: podexponovanej, normálnej a preexponovanej](docs/mineral-moon.png)
 
@@ -65,13 +65,19 @@ python3 -m venv .venv
 .venv/bin/python main.py
 ```
 
+## Nápoveda a prvé spustenie
+
+Pri prvom spustení sa otvorí krátky úvod v angličtine. Tlačidlo **Start editing** ho zavrie a aplikácia si zapamätá, že si ho už videl.
+
+Podrobný návod otvoríš kedykoľvek cez **?** vpravo hore, **F1** alebo **Help → Getting started / User guide**. Funguje offline a môže zostať otvorený vedľa pracovnej plochy. Má vyhľadávanie a osem tém: prvý výsledok, import a FITS/EV, zarovnanie, HDR verzus fúzia, úpravy a Mineral Moon, hviezdy/orez/podpis, export a riešenie problémov. Nápoveda nemení rozpracované úpravy. Projekty sa medzi spusteniami neukladajú, preto hotový výsledok pred zatvorením exportuj.
+
 ## Pracovný postup
 
 1. Načítaj dve alebo viac fotografií. Ďalšie môžeš pridávať do zoznamu, jednotlivé snímky nahradiť alebo odstrániť. Ako referenciu vyber ostrý, dobre exponovaný záber; určuje výsledný výrez a rozmery.
 2. Nastav rozdiely EV voči referenčnému záberu. Pri dostupnom expozičnom čase v každom FITS sa predvyplnia z hlavičiek. Napríklad časy 1/1000, 1/250 a 1/60 s pri rovnakom ISO a clone približne zodpovedajú −2, 0 a +2 EV. Pri chýbajúcich údajoch nastav EV ručne; predvolené nuly nie sú odhadom skutočnej expozície. Z JPEG EXIF sa časy automaticky nezisťujú.
 3. Vyber HDR alebo expozičnú fúziu a spusti zarovnanie a skladanie. Skontroluj diagnostiku zarovnania; pri neistej registrácii použi ručné doladenie.
 4. Vyskúšaj **Mineral Moon**, prípadne uprav saturáciu, teplotu, kontrast, detaily a ďalšie posuvníky. Porovnaj výsledok s vybranou referenčnou snímkou.
-5. V časti **Dokončenie** dole v pravom paneli uprav pozadie: ponechaj pôvodné hviezdy, potlač malé svetlé body alebo pridaj syntetické hviezdy ako vizuálny efekt. Tieto voľby nemenia pôvodné súbory.
+5. V časti **Finishing** dole v pravom paneli uprav pozadie: ponechaj pôvodné hviezdy, potlač malé svetlé body alebo pridaj syntetické hviezdy ako vizuálny efekt. Tieto voľby nemenia pôvodné súbory.
 6. Vyber orez myšou a podľa potreby zapni vlastný textový podpis. Orez môžeš zrušiť a podpis upraviť.
 7. Exportuj hotový obrázok ako PNG/JPEG alebo 16-bit TIFF. Pre ďalšie HDR spracovanie exportuj lineárny súbor Radiance `.hdr`.
 
@@ -83,7 +89,7 @@ python3 -m venv .venv
 
 **Expozičná fúzia** spája použiteľné oblasti expozícií do zobraziteľného obrázka. Tento režim nie je lineárny HDR a nemá export HDR radiancie. Rozdiel medzi HDR a expozičnou fúziou vysvetľuje aj [dokumentácia OpenCV](https://docs.opencv.org/4.12.0/d2/df0/tutorial_py_hdr.html).
 
-**Mineral Moon** zvýrazňuje existujúce farebné rozdiely. Posuvník **Neutralizácia farieb** najprv vyváži priemerný farebný nádych jasnej časti disku; predpokladá približne neutrálny Mesiac a dá sa znížiť alebo vypnúť. Preset Mineral Moon ho zapína, aby nezosilňoval iba celkový žltý či zelený nádych vstupu. Nevytvára skutočné farebné informácie z monochromatickej snímky a nie je mineralogickou analýzou. Kvalitu ovplyvní farebný šum a vyváženie bielej. Množstvo okolitej žiary riadi zvolená zostava expozícií. Mineral Moon sa sústreďuje na farebné rozdiely a detaily povrchu; potlačenie pozadia zostáva samostatnou, voliteľnou úpravou v časti Dokončenie.
+**Mineral Moon** zvýrazňuje existujúce farebné rozdiely. Posuvník **Color neutralization** najprv vyváži priemerný farebný nádych jasnej časti disku; predpokladá približne neutrálny Mesiac a dá sa znížiť alebo vypnúť. Preset Mineral Moon ho zapína, aby nezosilňoval iba celkový žltý či zelený nádych vstupu. Nevytvára skutočné farebné informácie z monochromatickej snímky a nie je mineralogickou analýzou. Kvalitu ovplyvní farebný šum a vyváženie bielej. Množstvo okolitej žiary riadi zvolená zostava expozícií. Mineral Moon sa sústreďuje na farebné rozdiely a detaily povrchu; potlačenie pozadia zostáva samostatnou, voliteľnou úpravou v časti Dokončenie.
 
 PNG/JPEG/TIFF obsahujú úpravy z posuvníkov, zvolené hviezdne pozadie, orez a podpis. Radiance HDR obsahuje celé základné lineárne zlúčenie, bez kreatívnych úprav, orezu, podpisu a mapovania tónov. Pridané hviezdy sú deterministický vizuálny efekt, nie zaznamenané astronomické objekty. Potlačenie hviezd je odhad malých svetlých bodov mimo disku, preto skontroluj náhľad.
 

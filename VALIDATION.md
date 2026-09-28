@@ -1,4 +1,12 @@
-# Validation for 0.4.0
+# Validation
+
+## 0.5.0 English interface and offline help
+
+Local automated testing on September 28, 2026 passed **120 tests** on macOS Apple silicon with Python 3.11.15. The seven new help/onboarding cases verify the first visible launch, durable dismissal through a fresh settings instance, disabled onboarding, closing before the welcome timer fires, the header button/Help menu/F1, search and topic navigation, and preservation of edited images and finishing settings when reopening help.
+
+Test settings use isolated temporary INI files. Qt platform plugins were copied to a temporary directory for this local test process because the Documents file provider marks the original plugins hidden; this environment workaround is not part of the application. The packaged startup check now also constructs the offline guide and verifies its topics and export article without dismissing the user's first-run welcome.
+
+## 0.4.0 baseline
 
 This document records the verified 0.4.0 release and retained regression coverage from 0.3.0. Local testing was performed on September 27, 2026, using macOS 26.6.2 on Apple silicon, Python 3.11.15, Qt 6.11.2 and OpenCV 5.0.0.
 

@@ -9,7 +9,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 import cv2
 import numpy as np
 import pytest
-from PySide6.QtCore import QPoint, Qt
+from PySide6.QtCore import QPoint, QSettings, Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QFileDialog
 
@@ -23,9 +23,10 @@ def qt_app():
 
 
 @pytest.fixture
-def window(qt_app, monkeypatch):
+def window(qt_app, monkeypatch, tmp_path):
     monkeypatch.setattr(ui.MainWindow, "load_demo", lambda self: None)
-    result = ui.MainWindow()
+    settings = QSettings(str(tmp_path / "test-settings.ini"), QSettings.Format.IniFormat)
+    result = ui.MainWindow(settings=settings, show_onboarding=False)
     pixels = np.full((24, 32, 3), 0.4, np.float32)
     result.composite = engine.Composite(pixels, pixels * 3, "radiance", [])
     result._preview_base = pixels.copy()
@@ -126,7 +127,7 @@ def test_write_failure_is_visible_and_export_can_retry(window, qt_app, monkeypat
     window.export_image()
     wait_for_export(window, qt_app)
     assert len(window.errors) == 1 and str(tmp_path) in window.errors[0]
-    assert "Obrázky" in window.errors[0]
+    assert "Pictures" in window.errors[0]
     assert not destination.exists()
     assert window.export_button.isEnabled()
     monkeypatch.setattr(engine, "write_image", real_write)
@@ -182,7 +183,7 @@ def test_linear_hdr_bypasses_crop_background_signature_and_development(window, q
     window.crop_enabled = True
     window.adjustments["exposure"].set_value(2)
     destination = tmp_path / "linear.hdr"
-    monkeypatch.setattr(QFileDialog, "getSaveFileName", staticmethod(lambda *a, **k: (str(destination), "Lineárna radiancia HDR bez úprav (*.hdr)")))
+    monkeypatch.setattr(QFileDialog, "getSaveFileName", staticmethod(lambda *a, **k: (str(destination), "Linear HDR radiance (unedited) (*.hdr)")))
     window.export_image()
     wait_for_export(window, qt_app)
     decoded = cv2.imread(str(destination), cv2.IMREAD_UNCHANGED)[..., ::-1]

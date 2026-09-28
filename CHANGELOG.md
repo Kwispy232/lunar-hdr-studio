@@ -1,5 +1,13 @@
 # Changes
 
+## 0.5.0
+
+- Translated the complete application interface, tooltips, status messages and dialogs to English.
+- Added a first-run introduction and a reusable offline guide, available from the top-right **?** button, F1 and the Help menu.
+- Added searchable instructions for import and FITS/EV, alignment, HDR/fusion, every development slider, Mineral Moon, stars, crop, signatures, export and troubleshooting.
+- Remember guide dismissal between launches without changing the editing session; help remains accessible during processing.
+- Added seven behavioral help/onboarding tests and included the offline guide in packaged startup verification.
+
 ## 0.4.0
 
 - Improved Mineral Moon color separation using measured surface color differences, with luminance and gamut protection. Exposure glow remains controlled by the source stack and exposure adjustments.

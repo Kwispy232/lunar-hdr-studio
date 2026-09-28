@@ -2,7 +2,7 @@
 
 [Slovensky](README.sk.md)
 
-A local desktop app for combining two or more lunar exposures and creating a **Mineral Moon** look. Version **0.4.0** supports FITS, any number of exposures, star backgrounds, custom signatures and cropping. Your photographs stay on your computer. The app interface is currently in Slovak.
+A local desktop app for combining two or more lunar exposures and creating a **Mineral Moon** look. Version **0.5.0** supports FITS, any number of exposures, star backgrounds, custom signatures and cropping. Your photographs stay on your computer. The app interface and its built-in help are in English.
 
 ![Lunar image from three DWARF Mini exposures: underexposed, normal and overexposed](docs/mineral-moon.png)
 
@@ -71,13 +71,21 @@ python3 -m venv .venv
 .venv/bin/python main.py
 ```
 
+## Help and getting started
+
+A short introduction opens the first time you launch the app. Click **Start editing** when you are ready; the app remembers that you dismissed it.
+
+Open the guide again with the **?** button in the top-right corner, **F1**, or **Help → Getting started / User guide**. The guide works entirely offline and can stay open beside your editing workspace. Search for a term such as `FITS`, `EV`, `crop` or `export`, choose a topic, or move through the topics with Previous and Next.
+
+The eight topics explain the first composite, importing files and FITS exposure values, automatic and manual alignment, HDR versus exposure fusion, every development slider and Mineral Moon, stars/crop/signatures, export formats, and troubleshooting. Opening help preserves your current images and edits. Editing projects themselves are not saved between sessions, so export a result you want to keep before closing the app.
+
 ## Workflow
 
 1. Load two or more photographs. Add further exposures to the list, replace individual frames or remove them. Choose a sharp, well-exposed frame as the reference; it determines the alignment canvas and output dimensions before cropping.
 2. Set each frame's EV relative to the reference. When every FITS file contains an exposure time, EV values are filled from the headers. For example, exposures of 1/1000, 1/250 and 1/60 second at the same ISO and aperture are approximately −2, 0 and +2 EV. If metadata is missing, enter EV values manually; the initial zeros are not estimates of the actual exposure. JPEG EXIF exposure times are not read automatically.
 3. Choose HDR or exposure fusion, then align and merge. Inspect the alignment diagnostics and use manual adjustment if registration is uncertain.
 4. Try **Mineral Moon**, or adjust saturation, temperature, contrast, detail and the other sliders. Compare the result with the selected reference frame.
-5. In **Dokončenie** (Finishing), at the bottom of the right panel, keep the original star background, suppress small bright points or add synthetic stars as a visual effect. These options do not modify the source files.
+5. In **Finishing**, at the bottom of the right panel, keep the original star background, suppress small bright points or add synthetic stars as a visual effect. These options do not modify the source files.
 6. Select a crop with the mouse and optionally enable a custom text signature. You can reset the crop or edit the signature.
 7. Export the finished image as PNG, JPEG or 16-bit TIFF. For further HDR processing, export a linear Radiance `.hdr` file.
 
@@ -85,11 +93,11 @@ python3 -m venv .venv
 
 **HDR from ordinary images** converts input sRGB colors to linear values, accounts for the supplied EV values and combines exposures with weighted blending. The floating-point output preserves values above 1; the preview uses tone mapping. This produces relative HDR under an assumed sRGB response. It is not sensor calibration or a precise brightness measurement.
 
-**HDR from FITS** uses the original linear samples after applying FITS `BSCALE/BZERO` scaling. Preview contrast does not change the samples used for merging. `EXPTIME` values allow intensity to be normalized per unit time; inputs already marked as rates are not divided by exposure time again. Frames must have compatible units and calibration. Supported units include ADU, DN, counts, electrons and photons, as well as their per-second forms. Other calibrated units, such as Jy/sr, require conversion first, or you can use visual exposure fusion. Automatic EV suggestions assume the same gain, aperture and filters. When exposure times differ by more than 1000×, the app warns you to check stack normalization. For stacks that have already been normalized in brightness, verify EV manually: total integration time may not represent a brightness difference in the stored pixels. Do not combine ordinary sRGB images and FITS data with physical units in one radiometric HDR merge; use exposure fusion for a visual combination.
+**HDR from FITS** uses the original linear samples after applying FITS `BSCALE/BZERO` scaling. Preview contrast does not change the samples used for merging. `EXPTIME` values allow intensity to be normalized per unit time; inputs already marked as rates are not divided by exposure time again. Frames must have compatible units and calibration. Supported units include ADU, DN, counts, electrons and photons, as well as their per-second forms. Other calibrated units, such as Jy/sr, require conversion first, or you can use visual exposure fusion. Automatic EV suggestions assume the same gain, aperture and filters. When exposure times differ by more than 1000×, the app warns you to check stack normalization. For stacks that have already been normalized in brightness, verify EV manually: total integration time may not represent a brightness difference in the stored pixels. Do not combine ordinary sRGB images and FITS data in one radiometric HDR merge; use exposure fusion for a visual combination.
 
 **Exposure fusion** combines usable regions from the exposures into a displayable image. It does not produce linear HDR and cannot export HDR radiance. The distinction between HDR and exposure fusion is also covered in the [OpenCV documentation](https://docs.opencv.org/4.12.0/d2/df0/tutorial_py_hdr.html).
 
-**Mineral Moon** enhances existing color differences. The **Neutralizácia farieb** (Color neutralization) slider first balances the average color cast in the bright part of the lunar disk. It assumes the Moon is approximately neutral gray, and its strength can be reduced or disabled. The Mineral Moon preset enables it so that the preset does not simply amplify an overall yellow or green cast. It cannot recover real color information from monochrome data and is not a mineralogical analysis. Color noise and white balance affect the result. Your exposure stack controls the amount of surrounding glow. Mineral Moon selectively enhances recorded surface colors while preserving their brightness and protecting the surrounding glow. It does not impose a blue/copper palette: the achievable colors and detail depend on the captures. Star suppression remains a separate finishing choice.
+**Mineral Moon** enhances existing color differences. The **Color neutralization** slider first balances the average color cast in the bright part of the lunar disk. It assumes the Moon is approximately neutral gray, and its strength can be reduced or disabled. The Mineral Moon preset enables it so that the preset does not simply amplify an overall yellow or green cast. It cannot recover real color information from monochrome data and is not a mineralogical analysis. Color noise and white balance affect the result. Your exposure stack controls the amount of surrounding glow. Mineral Moon selectively enhances recorded surface colors while preserving their brightness and protecting the surrounding glow. It does not impose a blue/copper palette: the achievable colors and detail depend on the captures. Star suppression remains a separate finishing choice.
 
 PNG, JPEG and TIFF exports include slider adjustments, the selected star background, crop and signature. Radiance HDR exports contain the full base linear merge, without creative adjustments, cropping, signatures or tone mapping. Added stars are a deterministic visual effect, not recorded astronomical objects. Star suppression estimates small bright points outside the lunar disk, so inspect the preview.
 
