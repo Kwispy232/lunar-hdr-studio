@@ -51,7 +51,7 @@ sudo apt install python3-venv libegl1 libopengl0 libxkbcommon-x11-0 libxcb-curso
 
 To check setup without opening the app, run the same launcher with `--check`. If an existing `.venv` was created with an unsupported Python version or is incomplete, rename that folder and rerun the launcher. Your image files are unaffected.
 
-The pinned binary dependencies target modern systems: macOS 13+, Windows 10/11, and Linux x86_64 with glibc 2.34+ (such as Ubuntu 22.04+). Version 0.4.0 passed tests, packaging and packaged startup checks on all four targets listed above. Interactive app testing has been performed on macOS; successful CI builds do not replace visual testing on each target computer.
+The pinned binary dependencies target modern systems: macOS 13+, Windows 10/11, and Linux x86_64 with glibc 2.34+ (such as Ubuntu 22.04+). Version 0.5.0 passed tests, packaging and packaged startup checks on all four targets listed above. Interactive app testing has been performed on macOS; successful CI builds do not replace visual testing on each target computer.
 
 If you prefer manual setup, run the following commands from the cloned repository. No environment activation is required.
 
@@ -131,7 +131,7 @@ python -m pytest -q
 python build.py
 ```
 
-The result is placed in `dist/`. Build standalone packages on the target operating system and architecture. The `.github/workflows/build.yml` workflow tests and builds macOS Apple silicon, macOS Intel, Windows x64 and Linux x64 packages on pushes to `main`, pull requests and manual runs. **Verified 0.4.0 build:** [all four platforms passed](https://github.com/Kwispy232/lunar-hdr-studio/actions/runs/36310250413), including packaged startup and bundled preview loading. macOS and Linux each passed 113 tests; Windows passed 112 because it has one launcher instead of two Unix launchers. A fresh anonymous clone was also installed and launched successfully on macOS with Python 3.14.2. ZIP archives are available from each successful run's artifacts. Runner platforms are described in the [GitHub documentation](https://docs.github.com/en/actions/reference/runners/github-hosted-runners); [Qt for Python](https://doc.qt.io/qtforpython-6.8/deployment/index.html) supports these three desktop operating systems.
+The result is placed in `dist/`. Build standalone packages on the target operating system and architecture. The `.github/workflows/build.yml` workflow tests and builds macOS Apple silicon, macOS Intel, Windows x64 and Linux x64 packages on pushes to `main`, pull requests and manual runs. **Verified 0.5.0 build:** [all four platforms passed](https://github.com/Kwispy232/lunar-hdr-studio/actions/runs/36386127469), including packaged startup, bundled preview loading and the offline help content. macOS and Linux each passed 120 tests; Windows passed 119 because it has one launcher instead of two Unix launchers. The earlier 0.4.0 launchers also passed a fresh anonymous clone, installation and startup check on macOS with Python 3.14.2. ZIP archives are available from each successful run's artifacts. Runner platforms are described in the [GitHub documentation](https://docs.github.com/en/actions/reference/runners/github-hosted-runners); [Qt for Python](https://doc.qt.io/qtforpython-6.8/deployment/index.html) supports these three desktop operating systems.
 
 The Mac package is a development build without Apple Developer notarization. See `VALIDATION.md` for local and CI checks. A successful build does not replace visual testing on the target computer.
 

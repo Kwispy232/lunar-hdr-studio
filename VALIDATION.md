@@ -6,6 +6,10 @@ Local automated testing on September 28, 2026 passed **120 tests** on macOS Appl
 
 Test settings use isolated temporary INI files. Qt platform plugins were copied to a temporary directory for this local test process because the Documents file provider marks the original plugins hidden; this environment workaround is not part of the application. The packaged startup check now also constructs the offline guide and verifies its topics and export article without dismissing the user's first-run welcome.
 
+The 0.5.0 macOS Apple silicon app was built locally, its ZIP passed integrity checks, and the extracted app passed strict ad-hoc signature verification and its packaged startup check from `/`. The installed app was opened through LaunchServices: the first-run guide appeared, searching `read-only` found export and troubleshooting topics, **Start editing** revealed the English workspace, and the **?** button reopened the guide with the search cleared. The guide and workspace were visually inspected on macOS; all eight guide topic labels and the export table were readable.
+
+**Cross-platform 0.5.0 CI:** [run 36386127469](https://github.com/Kwispy232/lunar-hdr-studio/actions/runs/36386127469) at code commit `04190d3` passed tests, standalone packaging, startup with the bundled demo and offline guide, and artifact upload on all four targets. Apple silicon macOS, Intel macOS and Linux each passed 120 tests; Windows passed 119 because only one launcher applies. UI checks in CI use Qt offscreen; interactive testing was performed on macOS.
+
 ## 0.4.0 baseline
 
 This document records the verified 0.4.0 release and retained regression coverage from 0.3.0. Local testing was performed on September 27, 2026, using macOS 26.6.2 on Apple silicon, Python 3.11.15, Qt 6.11.2 and OpenCV 5.0.0.
